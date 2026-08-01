@@ -13,5 +13,6 @@ urlpatterns = [
     path("api/v1/", include("apps.donations.urls")),
     path("api/v1/", include("apps.notifications.urls")),
     path("api/v1/", include("apps.payouts.urls")),
+    path("api/v1/analytics/", include("apps.analytics.urls")),
     path("api/v1/ngo-profile/", include("apps.ngo_profiles.urls")),
 ]

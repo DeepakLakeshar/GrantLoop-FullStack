@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.notifications",
     "apps.beneficiaries",
     "apps.payouts",
+    "apps.analytics",
 ]
 
 MIDDLEWARE = [
