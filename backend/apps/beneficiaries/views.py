@@ -14,8 +14,10 @@ from .serializers import (
     BeneficiaryWriteSerializer,
 )
 from . import services
+from grantloop.openapi import beneficiary_viewset_schema
 
 
+@beneficiary_viewset_schema
 class BeneficiaryViewSet(viewsets.ModelViewSet):
     """
     API viewset for managing beneficiary records.
@@ -23,6 +25,7 @@ class BeneficiaryViewSet(viewsets.ModelViewSet):
     """
 
     permission_classes = [BeneficiaryPermission]
+    queryset = Beneficiary.objects.all()
     pagination_class = None  # Tests and API contract expect a direct list, not paginated dict
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_fields = ["campaign", "verification_status"]
@@ -35,6 +38,8 @@ class BeneficiaryViewSet(viewsets.ModelViewSet):
         """
         Retrieves the base queryset scoped by requesting user role.
         """
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return Beneficiary.objects.none()
         return services.list_beneficiaries(user=self.request.user)
 
     def get_object(self):

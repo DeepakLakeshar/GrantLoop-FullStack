@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 
 from .webhooks import handle_stripe_webhook, handle_razorpay_webhook
+from grantloop.openapi import razorpay_webhook_schema, stripe_webhook_schema
 
 
 class StripeWebhookView(APIView):
@@ -12,6 +13,7 @@ class StripeWebhookView(APIView):
     """
     permission_classes = [AllowAny]
 
+    @stripe_webhook_schema
     def post(self, request, *args, **kwargs):
         payload = request.data
         if not isinstance(payload, dict):
@@ -29,6 +31,7 @@ class RazorpayWebhookView(APIView):
     """
     permission_classes = [AllowAny]
 
+    @razorpay_webhook_schema
     def post(self, request, *args, **kwargs):
         payload = request.data
         if not isinstance(payload, dict):

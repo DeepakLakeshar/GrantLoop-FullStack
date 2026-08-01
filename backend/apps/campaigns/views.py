@@ -6,6 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from grantloop.openapi import campaign_viewset_schema
 
 from common.permissions import IsInstitutionOrAdmin, IsNGO, IsOwnerNGOOrAdmin
 from . import services
@@ -22,6 +24,10 @@ from .serializers import (
 PUBLIC_STATUSES = {"live", "completed"}
 
 
+@extend_schema_view(
+    list=extend_schema(tags=["Campaigns"], summary="List All Campaign Categories"),
+    retrieve=extend_schema(tags=["Campaigns"], summary="Retrieve Category Details"),
+)
 class CategoryViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """Category listing — read-only, public. No write endpoint in Phase
     2A (categories are seeded via fixtures/admin, not user-created)."""
@@ -31,6 +37,7 @@ class CategoryViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets
     permission_classes = [AllowAny]
 
 
+@campaign_viewset_schema
 class CampaignViewSet(viewsets.ModelViewSet):
     queryset = Campaign.objects.select_related("category", "created_by")
     http_method_names = ["get", "post", "patch", "head", "options"]  # no PUT, no direct DELETE
@@ -123,6 +130,11 @@ class CampaignViewSet(viewsets.ModelViewSet):
 
 
 
+@extend_schema_view(
+    list=extend_schema(tags=["Campaigns"], summary="List Campaign Verification Reviews"),
+    create=extend_schema(tags=["Campaigns"], summary="Submit Campaign Verification Review (Approve/Reject)"),
+    retrieve=extend_schema(tags=["Campaigns"], summary="Retrieve Review Record by ID"),
+)
 class VerificationViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """Reviews are created here (the actual approve/reject/more-info
     action); Campaign.status transitions happen as a side effect inside
@@ -154,6 +166,10 @@ class VerificationViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins
         return Response(VerificationSerializer(verification).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema_view(
+    list=extend_schema(tags=["Campaigns"], summary="List Public Transparency Audit Logs"),
+    retrieve=extend_schema(tags=["Campaigns"], summary="Retrieve Transparency Log Record"),
+)
 class TransparencyLogViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """Public, read-only — system-generated only (see models.py)."""
 

@@ -17,8 +17,10 @@ from .serializers import (
     MilestoneSerializer,
     MilestoneStatusTransitionSerializer,
 )
+from grantloop.openapi import milestone_viewset_schema
 
 
+@milestone_viewset_schema
 class MilestoneViewSet(viewsets.ModelViewSet):
     """
     Milestones are public evidence of campaign progress (readable by

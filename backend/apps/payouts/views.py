@@ -20,8 +20,10 @@ from .serializers import (
     PayoutFailSerializer,
 )
 from . import services
+from grantloop.openapi import payout_viewset_schema
 
 
+@payout_viewset_schema
 class PayoutViewSet(viewsets.ModelViewSet):
     """
     Thin ViewSet managing Payout lifecycle operations.

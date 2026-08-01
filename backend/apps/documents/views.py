@@ -11,8 +11,10 @@ from . import services
 from .models import Document
 from .permissions import IsAuthenticatedForWrite
 from .serializers import DocumentReviewSerializer, DocumentSerializer
+from grantloop.openapi import document_viewset_schema
 
 
+@document_viewset_schema
 class DocumentViewSet(viewsets.ModelViewSet):
     """
     Unlike Milestones/CampaignUpdates, Documents require authentication

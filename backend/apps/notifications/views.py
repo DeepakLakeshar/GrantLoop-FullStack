@@ -5,8 +5,10 @@ from rest_framework.response import Response
 from .permissions import NotificationPermission, IsNotificationOwner
 from .serializers import NotificationDetailSerializer, NotificationListSerializer
 from . import services
+from grantloop.openapi import notification_viewset_schema
 
 
+@notification_viewset_schema
 class NotificationViewSet(viewsets.ViewSet):
     """
     ViewSet for managing user notifications.
@@ -14,6 +16,7 @@ class NotificationViewSet(viewsets.ViewSet):
     """
 
     permission_classes = [NotificationPermission, IsNotificationOwner]
+    serializer_class = NotificationListSerializer
 
     def list(self, request):
         """

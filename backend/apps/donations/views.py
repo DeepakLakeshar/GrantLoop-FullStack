@@ -10,8 +10,10 @@ from .serializers import (
     DonationWriteSerializer,
 )
 from . import services
+from grantloop.openapi import donation_viewset_schema
 
 
+@donation_viewset_schema
 class DonationViewSet(viewsets.ModelViewSet):
     """
     ViewSet for listing, retrieving, and creating campaign donations.

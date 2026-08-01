@@ -2,6 +2,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema
+from grantloop.openapi import analytics_dashboard_schema
 
 from . import services, serializers, permissions
 
@@ -13,6 +15,7 @@ class AdminDashboardView(APIView):
     """
     permission_classes = [permissions.IsAdminForAnalytics]
 
+    @analytics_dashboard_schema
     def get(self, request):
         data = services.get_admin_dashboard(params=request.query_params.dict())
         serializer = serializers.AdminDashboardSerializer(data)
@@ -26,6 +29,7 @@ class NGODashboardView(APIView):
     """
     permission_classes = [permissions.IsNGOForAnalytics]
 
+    @analytics_dashboard_schema
     def get(self, request):
         data = services.get_ngo_dashboard(user=request.user, params=request.query_params.dict())
         serializer = serializers.NGODashboardSerializer(data)
@@ -39,6 +43,7 @@ class DonorDashboardView(APIView):
     """
     permission_classes = [permissions.IsDonorForAnalytics]
 
+    @analytics_dashboard_schema
     def get(self, request):
         data = services.get_donor_dashboard(user=request.user, params=request.query_params.dict())
         serializer = serializers.DonorDashboardSerializer(data)
@@ -51,7 +56,9 @@ class ChartAggregationView(APIView):
     Returns 12-month React-ready aggregated chart arrays for donations, payouts, campaigns, and users.
     """
     permission_classes = [permissions.IsAuthenticatedForAnalytics]
+    serializer_class = serializers.ChartSerializer
 
+    @extend_schema(tags=["Analytics"], summary="Retrieve Time-Series Monthly Chart Aggregation Arrays")
     def get(self, request, chart_type=None):
         valid_charts = {"donations", "payouts", "campaigns", "users"}
         if not chart_type or chart_type.lower().strip("/") not in valid_charts:
@@ -74,7 +81,9 @@ class LeaderboardView(APIView):
     Returns comparative entity leaderboards (top campaigns, NGOs, donors, activity, largest donations/payouts).
     """
     permission_classes = [permissions.IsAuthenticatedForAnalytics]
+    serializer_class = serializers.LeaderboardSerializer
 
+    @extend_schema(tags=["Analytics"], summary="Retrieve Comparative Performance Entity Leaderboards")
     def get(self, request, leaderboard_type=None):
         valid_leaderboards = {
             "top-campaigns", "top-ngos", "top-donors",

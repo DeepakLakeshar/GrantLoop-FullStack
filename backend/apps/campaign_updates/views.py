@@ -10,8 +10,10 @@ from . import services
 from .models import CampaignUpdate
 from .permissions import CanManageCampaignUpdates
 from .serializers import CampaignUpdateSerializer
+from grantloop.openapi import campaign_update_schema
 
 
+@campaign_update_schema
 class CampaignUpdateViewSet(viewsets.ModelViewSet):
     """
     Updates are append-only once posted — no edit endpoint, only create

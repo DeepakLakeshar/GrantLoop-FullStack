@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from drf_spectacular.utils import extend_schema
+from grantloop.openapi import auth_token_schema, user_register_schema
 
 from .serializers import (
     LoginSerializer,
@@ -27,11 +29,13 @@ def _tokens_for_user(user) -> dict:
     return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
 
+@user_register_schema
 class RegisterView(APIView):
     """POST /auth/register/ — matches frontend authApi.register() exactly:
     returns {access, refresh, user}, same shape as login."""
 
     permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -42,10 +46,12 @@ class RegisterView(APIView):
         return Response(data, status=status.HTTP_201_CREATED)
 
 
+@auth_token_schema
 class LoginView(APIView):
     """POST /auth/login/ — {access, refresh, user}."""
 
     permission_classes = [AllowAny]
+    serializer_class = LoginSerializer
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={"request": request})
@@ -56,12 +62,14 @@ class LoginView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Authentication"], summary="Logout and Blacklist Refresh Token")
 class LogoutView(APIView):
     """POST /auth/logout/ — blacklists the refresh token. Best-effort by
     contract (frontend proceeds with local logout regardless), but this
     endpoint itself still reports failure clearly if the token is bad."""
 
     permission_classes = [IsAuthenticated]
+    serializer_class = LogoutSerializer
 
     def post(self, request):
         serializer = LogoutSerializer(data=request.data)
@@ -74,6 +82,7 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(tags=["Accounts"], summary="Retrieve Authenticated User Profile (Me)")
 class MeView(RetrieveAPIView):
     """GET /auth/me/ — used by AuthContext to restore a session."""
 
@@ -84,12 +93,14 @@ class MeView(RetrieveAPIView):
         return self.request.user
 
 
+@extend_schema(tags=["Authentication"], summary="Request Password Reset Link via Email")
 class PasswordResetRequestView(APIView):
     """POST /auth/password-reset/ — always returns 200 regardless of
     whether the email exists, per the frontend's own comment: "never
     reveal account existence through this form's response." """
 
     permission_classes = [AllowAny]
+    serializer_class = PasswordResetRequestSerializer
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -111,10 +122,12 @@ class PasswordResetRequestView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
+@extend_schema(tags=["Authentication"], summary="Confirm and Reset Password with Token")
 class PasswordResetConfirmView(APIView):
     """POST /auth/password-reset/confirm/ — {token, new_password}."""
 
     permission_classes = [AllowAny]
+    serializer_class = PasswordResetConfirmSerializer
 
     def post(self, request):
         serializer = PasswordResetConfirmSerializer(data=request.data)

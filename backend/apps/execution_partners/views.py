@@ -10,8 +10,10 @@ from .serializers import (
     ExecutionPartnerWriteSerializer,
 )
 from . import services
+from grantloop.openapi import execution_partner_schema
 
 
+@execution_partner_schema
 class ExecutionPartnerViewSet(viewsets.ModelViewSet):
     """
     Execution Partners management endpoint.
