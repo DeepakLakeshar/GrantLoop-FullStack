@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
 from apps.accounts.serializers import UserPublicSerializer
-from .models import Beneficiary, Campaign, Category, TransparencyLog, Verification
+from .models import Campaign, Category, TransparencyLog, Verification
+from apps.beneficiaries.serializers import BeneficiaryListSerializer
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -9,16 +10,6 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ["id", "name", "slug"]
         read_only_fields = fields
-
-
-class BeneficiarySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Beneficiary
-        fields = [
-            "id", "campaign", "name", "verification_status",
-            "contact_email", "contact_phone", "payout_account_reference",
-        ]
-        read_only_fields = ["id", "verification_status"]  # status only changes via the verify action
 
 
 class VerificationSerializer(serializers.ModelSerializer):
@@ -61,7 +52,7 @@ class CampaignDetailSerializer(serializers.ModelSerializer):
     funding_percentage = serializers.ReadOnlyField()
     created_by = UserPublicSerializer(read_only=True)
     category = CategorySerializer(read_only=True)
-    beneficiaries = BeneficiarySerializer(many=True, read_only=True)
+    beneficiaries = BeneficiaryListSerializer(many=True, read_only=True, source="beneficiary_records")
     latest_verification = serializers.SerializerMethodField()
 
     class Meta:

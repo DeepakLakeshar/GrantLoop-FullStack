@@ -70,35 +70,6 @@ class Campaign(models.Model):
         return round(float(self.raised_amount) / float(self.goal_amount) * 100, 1)
 
 
-class Beneficiary(models.Model):
-    VERIFICATION_STATUS_CHOICES = [
-        ("pending", "Pending"),
-        ("verified", "Verified"),
-        ("rejected", "Rejected"),
-    ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="beneficiaries")
-    name = models.CharField(max_length=255)
-    verification_status = models.CharField(
-        max_length=20, choices=VERIFICATION_STATUS_CHOICES, default="pending"
-    )
-    contact_email = models.EmailField(blank=True)
-    contact_phone = models.CharField(max_length=30, blank=True)
-    # Reference to the payment gateway's own Connect/Route beneficiary
-    # object — deliberately NOT a raw bank account number or IFSC code.
-    # Keeps GrantLoop non-custodial (ADR-004). See Reconciliation v1.1,
-    # section 12, item 2.
-    payout_account_reference = models.CharField(max_length=255, blank=True, null=True)
-
-    class Meta:
-        verbose_name_plural = "beneficiaries"
-        indexes = [models.Index(fields=["campaign"])]
-
-    def __str__(self) -> str:
-        return self.name
-
-
 class Verification(models.Model):
     STATUS_CHOICES = [
         ("pending", "Pending"),

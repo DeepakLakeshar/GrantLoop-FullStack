@@ -9,9 +9,8 @@ from rest_framework.response import Response
 
 from common.permissions import IsInstitutionOrAdmin, IsNGO, IsOwnerNGOOrAdmin
 from . import services
-from .models import Beneficiary, Campaign, Category, TransparencyLog, Verification
+from .models import Campaign, Category, TransparencyLog, Verification
 from .serializers import (
-    BeneficiarySerializer,
     CampaignDetailSerializer,
     CampaignListSerializer,
     CampaignWriteSerializer,
@@ -122,40 +121,6 @@ class CampaignViewSet(viewsets.ModelViewSet):
             raise PermissionDenied(str(exc))
         return Response(CampaignDetailSerializer(campaign).data)
 
-
-class BeneficiaryViewSet(viewsets.ModelViewSet):
-    queryset = Beneficiary.objects.select_related("campaign")
-    serializer_class = BeneficiarySerializer
-    http_method_names = ["get", "post", "patch", "head", "options"]
-
-    def get_permissions(self):
-        if self.action in ("create", "partial_update"):
-            return [IsAuthenticated(), IsNGO()]
-        if self.action == "verify":
-            return [IsAuthenticated(), IsInstitutionOrAdmin()]
-        return [AllowAny()]
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if campaign_id := self.request.query_params.get("campaign"):
-            qs = qs.filter(campaign_id=campaign_id)
-        return qs
-
-    def perform_create(self, serializer):
-        campaign = serializer.validated_data["campaign"]
-        if campaign.created_by_id != self.request.user.id:
-            raise PermissionDenied("You can only add beneficiaries to your own campaigns.")
-        serializer.save()
-
-    @action(detail=True, methods=["post"])
-    def verify(self, request, pk=None):
-        beneficiary = self.get_object()
-        new_status = request.data.get("status")
-        try:
-            services.verify_beneficiary(beneficiary=beneficiary, reviewer=request.user, status=new_status)
-        except ValueError as exc:
-            raise ValidationError(str(exc))
-        return Response(BeneficiarySerializer(beneficiary).data)
 
 
 class VerificationViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):

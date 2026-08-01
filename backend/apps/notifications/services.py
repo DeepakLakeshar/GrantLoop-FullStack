@@ -36,8 +36,8 @@ def create_notification(
     """
     Creates and saves a single notification instance for a user.
     """
-    valid_types = [choice[0] for choice in Notification.NOTIFICATION_TYPE_CHOICES]
-    if notification_type not in valid_types:
+    from .models import NotificationType
+    if notification_type not in NotificationType.values:
         raise ValueError(f"Invalid notification type: {notification_type}")
 
     return Notification.objects.create(
@@ -61,8 +61,8 @@ def create_notifications(
     Bulk creates identical notifications for a list of recipient users.
     Optimized to query and insert in a single database round-trip.
     """
-    valid_types = [choice[0] for choice in Notification.NOTIFICATION_TYPE_CHOICES]
-    if notification_type not in valid_types:
+    from .models import NotificationType
+    if notification_type not in NotificationType.values:
         raise ValueError(f"Invalid notification type: {notification_type}")
 
     notifications = [

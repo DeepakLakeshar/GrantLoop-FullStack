@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
+    "django_filters",
     # local apps
     "apps.accounts",
     "apps.campaigns",
@@ -35,6 +36,8 @@ INSTALLED_APPS = [
     "apps.documents",
     "apps.donations",
     "apps.notifications",
+    "apps.beneficiaries",
+    "apps.payouts",
 ]
 
 MIDDLEWARE = [

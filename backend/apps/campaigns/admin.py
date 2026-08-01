@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Beneficiary, Campaign, Category, TransparencyLog, Verification
+from .models import Campaign, Category, TransparencyLog, Verification
 
 
 @admin.register(Category)
@@ -14,12 +14,6 @@ class CampaignAdmin(admin.ModelAdmin):
     list_display = ["title", "status", "category", "created_by", "goal_amount", "raised_amount", "created_at"]
     list_filter = ["status", "category"]
     search_fields = ["title", "created_by__email", "created_by__full_name"]
-
-
-@admin.register(Beneficiary)
-class BeneficiaryAdmin(admin.ModelAdmin):
-    list_display = ["name", "campaign", "verification_status"]
-    list_filter = ["verification_status"]
 
 
 @admin.register(Verification)

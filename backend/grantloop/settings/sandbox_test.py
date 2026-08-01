@@ -12,5 +12,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "sandbox_test.sqlite3",  # noqa: F405
+        "TEST": {
+            "NAME": ":memory:",
+        },
     }
 }
+

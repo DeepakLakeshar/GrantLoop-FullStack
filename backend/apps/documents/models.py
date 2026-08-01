@@ -3,7 +3,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 
-from apps.campaigns.models import Beneficiary, Campaign, Verification
+from apps.campaigns.models import Campaign, Verification
+from apps.beneficiaries.models import Beneficiary
 from apps.campaign_updates.models import CampaignUpdate
 from apps.milestones.models import Milestone
 

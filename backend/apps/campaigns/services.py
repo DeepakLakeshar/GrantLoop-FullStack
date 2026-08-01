@@ -8,7 +8,7 @@ that mutates campaign status.
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 
-from .models import Beneficiary, Campaign, TransparencyLog, Verification
+from .models import Campaign, TransparencyLog, Verification
 
 
 def create_campaign(*, created_by, **fields) -> Campaign:
@@ -75,15 +75,4 @@ def archive_campaign(*, campaign: Campaign, actor) -> Campaign:
     return campaign
 
 
-def verify_beneficiary(*, beneficiary: Beneficiary, reviewer, status: str) -> Beneficiary:
-    if status not in ("verified", "rejected"):
-        raise ValueError(f"Invalid beneficiary verification status '{status}'.")
 
-    with transaction.atomic():
-        beneficiary.verification_status = status
-        beneficiary.save(update_fields=["verification_status"])
-        TransparencyLog.objects.create(
-            campaign=beneficiary.campaign,
-            action=f"Beneficiary '{beneficiary.name}' {status} by {reviewer.full_name}",
-        )
-    return beneficiary

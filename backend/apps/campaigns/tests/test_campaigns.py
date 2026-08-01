@@ -3,7 +3,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.campaigns.models import Beneficiary, Campaign, Category, TransparencyLog, Verification
+from apps.campaigns.models import Campaign, Category, TransparencyLog, Verification
 
 User = get_user_model()
 
@@ -175,48 +175,6 @@ class CampaignLifecycleTests(APITestCase):
         response = self.client.post(reverse("campaign-archive", args=[self.campaign.id]))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-
-class BeneficiaryTests(APITestCase):
-    def setUp(self):
-        self.ngo = make_user("ngo3@example.com", "ngo", "NGO Three")
-        self.institution = make_user("inst2@example.com", "institution", "Institution Two")
-        self.campaign = Campaign.objects.create(created_by=self.ngo, title="Beneficiary Test", goal_amount=1000, status="draft")
-
-    def authenticate(self, user):
-        response = self.client.post(reverse("auth-login"), {"email": user.email, "password": "correcthorse8"})
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
-
-    def test_ngo_can_add_beneficiary_to_own_campaign(self):
-        self.authenticate(self.ngo)
-        response = self.client.post(reverse("beneficiary-list"), {
-            "campaign": str(self.campaign.id), "name": "Turkana Basin Community",
-            "contact_email": "liaison@turkana.org",
-        })
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
-        self.assertEqual(response.data["verification_status"], "pending")
-
-    def test_ngo_cannot_add_beneficiary_to_others_campaign(self):
-        other_ngo = make_user("other3@example.com", "ngo", "Other Three")
-        self.authenticate(other_ngo)
-        response = self.client.post(reverse("beneficiary-list"), {
-            "campaign": str(self.campaign.id), "name": "Should Fail",
-        })
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_institution_can_verify_beneficiary(self):
-        beneficiary = Beneficiary.objects.create(campaign=self.campaign, name="Test Beneficiary")
-        self.authenticate(self.institution)
-        response = self.client.post(reverse("beneficiary-verify", args=[beneficiary.id]), {"status": "verified"})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        beneficiary.refresh_from_db()
-        self.assertEqual(beneficiary.verification_status, "verified")
-        self.assertTrue(TransparencyLog.objects.filter(campaign=self.campaign).exists())
-
-    def test_ngo_cannot_verify_beneficiary(self):
-        beneficiary = Beneficiary.objects.create(campaign=self.campaign, name="Test Beneficiary")
-        self.authenticate(self.ngo)
-        response = self.client.post(reverse("beneficiary-verify", args=[beneficiary.id]), {"status": "verified"})
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 
 class TransparencyLogTests(APITestCase):

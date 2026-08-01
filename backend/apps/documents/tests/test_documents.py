@@ -4,7 +4,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from apps.campaigns.models import Beneficiary, Campaign
+from apps.campaigns.models import Campaign
+from apps.beneficiaries.models import Beneficiary
 from apps.documents.models import Document
 
 User = get_user_model()
@@ -74,7 +75,18 @@ class DocumentUploadTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_two_scopes_set_rejected(self):
-        beneficiary = Beneficiary.objects.create(campaign=self.campaign, name="Some Beneficiary")
+        beneficiary = Beneficiary.objects.create(
+            campaign=self.campaign,
+            full_name="Some Beneficiary",
+            email="some@example.com",
+            phone_number="+15555555555",
+            address="123 Street",
+            city="City",
+            state="State",
+            country="US",
+            postal_code="12345",
+            government_id="GOV_SOME",
+        )
         self.authenticate(self.ngo)
         response = self.client.post(reverse("document-list"), {
             "campaign": str(self.campaign.id), "beneficiary": str(beneficiary.id),
@@ -89,7 +101,18 @@ class DocumentPrivacyTests(APITestCase):
         self.donor = make_user("donor2@example.com", "donor", "Donor Two")
         self.institution = make_user("inst2@example.com", "institution", "Institution Two")
         self.campaign = Campaign.objects.create(created_by=self.ngo, title="Privacy Test", goal_amount=1000, status="live")
-        self.beneficiary = Beneficiary.objects.create(campaign=self.campaign, name="Private Beneficiary")
+        self.beneficiary = Beneficiary.objects.create(
+            campaign=self.campaign,
+            full_name="Private Beneficiary",
+            email="private@example.com",
+            phone_number="+15555555555",
+            address="123 Street",
+            city="City",
+            state="State",
+            country="US",
+            postal_code="12345",
+            government_id="GOV_PRIV",
+        )
 
     def authenticate(self, user):
         response = self.client.post(reverse("auth-login"), {"email": user.email, "password": "correcthorse8"})
