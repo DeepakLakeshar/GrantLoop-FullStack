@@ -4087,6 +4087,26 @@ paths:
           description: Internal Server Error - Upstream gateway exception or database
             connection disruption.
   /api/v1/beneficiaries/{id}/:
+    delete:
+      operationId: beneficiaries_destroy
+      description: |-
+        API viewset for managing beneficiary records.
+        Delegates all queries and mutations to the service layer.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this beneficiary.
+        required: true
+      tags:
+      - beneficiaries
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
     get:
       operationId: beneficiaries_retrieve
       description: |-
@@ -4223,6 +4243,41 @@ paths:
                   summary: Server Exception
           description: Internal Server Error - Upstream gateway exception or database
             connection disruption.
+    patch:
+      operationId: beneficiaries_partial_update
+      description: |-
+        API viewset for managing beneficiary records.
+        Delegates all queries and mutations to the service layer.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this beneficiary.
+        required: true
+      tags:
+      - beneficiaries
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBeneficiaryWriteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBeneficiaryWriteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBeneficiaryWriteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeneficiaryWrite'
+          description: ''
     put:
       operationId: beneficiaries_update
       description: |-
@@ -4250,61 +4305,6 @@ paths:
             schema:
               $ref: '#/components/schemas/BeneficiaryWriteRequest'
         required: true
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BeneficiaryWrite'
-          description: ''
-    delete:
-      operationId: beneficiaries_destroy
-      description: |-
-        API viewset for managing beneficiary records.
-        Delegates all queries and mutations to the service layer.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this beneficiary.
-        required: true
-      tags:
-      - beneficiaries
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-    patch:
-      operationId: beneficiaries_partial_update
-      description: |-
-        API viewset for managing beneficiary records.
-        Delegates all queries and mutations to the service layer.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this beneficiary.
-        required: true
-      tags:
-      - beneficiaries
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedBeneficiaryWriteRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedBeneficiaryWriteRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedBeneficiaryWriteRequest'
       security:
       - jwtAuth: []
       responses:
@@ -5372,6 +5372,27 @@ paths:
                 $ref: '#/components/schemas/Milestone'
           description: ''
   /api/v1/milestones/{id}/:
+    delete:
+      operationId: milestones_destroy
+      description: |-
+        Milestones are public evidence of campaign progress (readable by
+        anyone), but writes are gated: owning NGO, institution, or admin only
+        — enforced in services.py, not here (this view only orchestrates).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this milestone.
+        required: true
+      tags:
+      - milestones
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
     get:
       operationId: milestones_retrieve
       description: |-
@@ -5388,6 +5409,42 @@ paths:
         required: true
       tags:
       - milestones
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Milestone'
+          description: ''
+    patch:
+      operationId: milestones_partial_update
+      description: |-
+        Milestones are public evidence of campaign progress (readable by
+        anyone), but writes are gated: owning NGO, institution, or admin only
+        — enforced in services.py, not here (this view only orchestrates).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this milestone.
+        required: true
+      tags:
+      - milestones
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMilestoneRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMilestoneRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMilestoneRequest'
       security:
       - jwtAuth: []
       responses:
@@ -5425,63 +5482,6 @@ paths:
             schema:
               $ref: '#/components/schemas/MilestoneRequest'
         required: true
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Milestone'
-          description: ''
-    delete:
-      operationId: milestones_destroy
-      description: |-
-        Milestones are public evidence of campaign progress (readable by
-        anyone), but writes are gated: owning NGO, institution, or admin only
-        — enforced in services.py, not here (this view only orchestrates).
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this milestone.
-        required: true
-      tags:
-      - milestones
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-    patch:
-      operationId: milestones_partial_update
-      description: |-
-        Milestones are public evidence of campaign progress (readable by
-        anyone), but writes are gated: owning NGO, institution, or admin only
-        — enforced in services.py, not here (this view only orchestrates).
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this milestone.
-        required: true
-      tags:
-      - milestones
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedMilestoneRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedMilestoneRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedMilestoneRequest'
       security:
       - jwtAuth: []
       responses:
@@ -7303,6 +7303,27 @@ paths:
           description: Internal Server Error - Upstream gateway exception or database
             connection disruption.
   /api/v1/payouts/{id}/:
+    delete:
+      operationId: payouts_destroy
+      description: |-
+        Thin ViewSet managing Payout lifecycle operations.
+        Delegates entirely to services.py for business logic and state validation.
+        Enforces 403 Forbidden responses for unauthorized access attempts against existing rows.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this payout.
+        required: true
+      tags:
+      - payouts
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
     get:
       operationId: payouts_retrieve
       description: |-
@@ -7328,8 +7349,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/PayoutDetail'
           description: ''
-    put:
-      operationId: payouts_update
+    patch:
+      operationId: payouts_partial_update
       description: |-
         Thin ViewSet managing Payout lifecycle operations.
         Delegates entirely to services.py for business logic and state validation.
@@ -7353,29 +7374,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/PayoutDetail'
           description: ''
-    delete:
-      operationId: payouts_destroy
-      description: |-
-        Thin ViewSet managing Payout lifecycle operations.
-        Delegates entirely to services.py for business logic and state validation.
-        Enforces 403 Forbidden responses for unauthorized access attempts against existing rows.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this payout.
-        required: true
-      tags:
-      - payouts
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-    patch:
-      operationId: payouts_partial_update
+    put:
+      operationId: payouts_update
       description: |-
         Thin ViewSet managing Payout lifecycle operations.
         Delegates entirely to services.py for business logic and state validation.

@@ -1,12 +1,47 @@
 import os
+
 from .base import *  # noqa: F401,F403
 
-DEBUG = False
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+# -----------------------------------------------------------------------------
+# Production Settings
+# -----------------------------------------------------------------------------
 
-# Production hardening — real values come from AWS Secrets Manager
-# (Architecture Freeze v1.0, section 13), never committed here.
+DEBUG = False
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
+
+# -----------------------------------------------------------------------------
+# Security
+# -----------------------------------------------------------------------------
+
 SECURE_SSL_REDIRECT = True
+
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
 SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+X_FRAME_OPTIONS = "DENY"
+
+# -----------------------------------------------------------------------------
+# Static Files
+# -----------------------------------------------------------------------------
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# -----------------------------------------------------------------------------
+# WhiteNoise
+# -----------------------------------------------------------------------------
+
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
