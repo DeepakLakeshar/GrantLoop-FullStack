@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.analytics",
     "apps.reports",
     "apps.health",
+    "apps.common",
 ]
 
 MIDDLEWARE = [
@@ -79,19 +80,57 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "grantloop.wsgi.application"
 
-# Database — PostgreSQL (Architecture Freeze v1.0, section 15). Configured
-# entirely from environment variables; dev/prod settings differ only in
-# where those variables come from (.env locally, Secrets Manager in prod),
-# never in the engine itself.
+# Database — PostgreSQL & dj-database-url Configuration (Phase 11 Step 6).
+# Common database parsing supporting DATABASE_URL over individual DB_* variables.
+import dj_database_url
+
+def get_database_config(default_url=None, conn_max_age=0, ssl_require=False):
+    """
+    Parses database configuration using dj-database-url everywhere.
+    Supports DATABASE_URL (preferred), falling back to building a URL from
+    individual DB_* environment variables, or default_url if neither exists.
+    Configures CONN_MAX_AGE, health checks, SSL support, connection timeout, and atomic requests.
+    """
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        db_name = os.environ.get("DB_NAME")
+        db_user = os.environ.get("DB_USER")
+        db_password = os.environ.get("DB_PASSWORD", "")
+        db_host = os.environ.get("DB_HOST")
+        db_port = os.environ.get("DB_PORT", "5432")
+        if db_name and db_user and db_host:
+            url = f"postgres://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        elif default_url:
+            url = default_url
+
+    if not url:
+        return None
+
+    max_age = int(os.environ.get("CONN_MAX_AGE", conn_max_age))
+    health_checks = os.environ.get("DB_CONN_HEALTH_CHECKS", "True").lower() == "true"
+    ssl = ssl_require or os.environ.get("DB_SSL_REQUIRE", "False").lower() == "true"
+
+    config = dj_database_url.parse(
+        url,
+        conn_max_age=max_age,
+        conn_health_checks=health_checks,
+        ssl_require=ssl,
+    )
+
+    # Configure atomic requests (DRF best practice for transaction safety)
+    config["ATOMIC_REQUESTS"] = os.environ.get("DB_ATOMIC_REQUESTS", "True").lower() == "true"
+
+    # Configure connection timeout for PostgreSQL engines
+    if config.get("ENGINE") == "django.db.backends.postgresql":
+        options = config.setdefault("OPTIONS", {})
+        options.setdefault("connect_timeout", int(os.environ.get("DB_CONNECT_TIMEOUT", 10)))
+
+    return config
+
+
+_base_fallback = f"postgres://{os.environ.get('DB_USER', 'grantloop')}:{os.environ.get('DB_PASSWORD', '')}@{os.environ.get('DB_HOST', 'localhost')}:{os.environ.get('DB_PORT', '5432')}/{os.environ.get('DB_NAME', 'grantloop')}"
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", "grantloop"),
-        "USER": os.environ.get("DB_USER", "grantloop"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-        "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
-    }
+    "default": get_database_config(default_url=_base_fallback, conn_max_age=0)
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -237,3 +276,68 @@ SPECTACULAR_SETTINGS = {
         },
     },
 }
+
+# =============================================================================
+# Celery Production Configuration & Background Jobs (Phase 11 Step 7)
+# =============================================================================
+from celery.schedules import crontab  # noqa: E402
+from kombu import Exchange, Queue  # noqa: E402
+
+# Broker & Result Backend URLs configured primarily via REDIS_URL
+_default_redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", _default_redis_url)
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", _default_redis_url)
+
+# Task Serialization & Content Handling
+CELERY_TASK_TRACK_STARTED = True
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+# Timezone & UTC enforcement
+CELERY_ENABLE_UTC = True
+CELERY_TIMEZONE = "UTC"
+
+# Task Execution Time Boundaries (Hard & Soft limits)
+CELERY_TASK_TIME_LIMIT = int(os.environ.get("CELERY_TASK_TIME_LIMIT", 1800))       # 30 minutes hard kill
+CELERY_TASK_SOFT_TIME_LIMIT = int(os.environ.get("CELERY_TASK_SOFT_TIME_LIMIT", 1500))  # 25 minutes soft signal
+
+# Queue Separation & Routing Design
+CELERY_TASK_DEFAULT_QUEUE = "default"
+CELERY_TASK_QUEUES = (
+    Queue("default", Exchange("default", type="direct"), routing_key="default"),
+    Queue("emails", Exchange("emails", type="direct"), routing_key="emails"),
+    Queue("reports", Exchange("reports", type="direct"), routing_key="reports"),
+    Queue("notifications", Exchange("notifications", type="direct"), routing_key="notifications"),
+    Queue("payouts", Exchange("payouts", type="direct"), routing_key="payouts"),
+)
+
+CELERY_TASK_ROUTES = {
+    "apps.common.tasks.send_email_task": {"queue": "emails", "routing_key": "emails"},
+    "apps.reports.tasks.*": {"queue": "reports", "routing_key": "reports"},
+    "apps.notifications.tasks.*": {"queue": "notifications", "routing_key": "notifications"},
+    "apps.payouts.tasks.*": {"queue": "payouts", "routing_key": "payouts"},
+    "*": {"queue": "default", "routing_key": "default"},
+}
+
+# Scheduled Maintenance Jobs (Celery Beat Schedule)
+CELERY_BEAT_SCHEDULE = {
+    "cleanup-old-notifications-daily": {
+        "task": "apps.common.tasks.cleanup_old_notifications",
+        "schedule": crontab(hour=2, minute=0),  # Daily at 02:00 AM UTC
+    },
+    "cleanup-expired-tokens-daily": {
+        "task": "apps.common.tasks.cleanup_expired_tokens",
+        "schedule": crontab(hour=3, minute=0),  # Daily at 03:00 AM UTC
+    },
+    "recalculate-analytics-cache-periodic": {
+        "task": "apps.common.tasks.recalculate_analytics_cache",
+        "schedule": crontab(minute="*/30"),  # Every 30 minutes
+    },
+}
+
+# Worker Graceful Shutdown & Resilience Options
+CELERY_WORKER_PREFETCH_MULTIPLIER = int(os.environ.get("CELERY_WORKER_PREFETCH_MULTIPLIER", 1))
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_WORKER_MAX_TASKS_PER_CHILD = int(os.environ.get("CELERY_WORKER_MAX_TASKS_PER_CHILD", 1000))

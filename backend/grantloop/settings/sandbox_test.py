@@ -8,13 +8,16 @@ Freeze v1.0; this file should not ship anywhere.
 """
 from .dev import *  # noqa: F401,F403
 
+import dj_database_url  # noqa: E402
+
+_sandbox_db_url = f"sqlite:///{BASE_DIR / 'sandbox_test.sqlite3'}"  # noqa: F405
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "sandbox_test.sqlite3",  # noqa: F405
-        "TEST": {
-            "NAME": ":memory:",
-        },
-    }
+    "default": dj_database_url.parse(
+        _sandbox_db_url,
+        conn_max_age=0,
+        conn_health_checks=False,
+    )
 }
+DATABASES["default"]["TEST"] = {"NAME": ":memory:"}
+DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
