@@ -72,7 +72,7 @@ _prod_db = get_database_config(  # noqa: F405
     ssl_require=os.environ.get("DB_SSL_REQUIRE", "False").lower() == "true",
 )
 
-if not _prod_db or _prod_db.get("ENGINE") == "django.db.backends.sqlite3" or "sqlite" in str(_prod_db.get("NAME", "")).lower():
+if not _prod_db or "sqlite" in str(_prod_db.get("ENGINE", "")).lower() or "sqlite" in str(_prod_db.get("NAME", "")).lower():
     raise ImproperlyConfigured("SQLite database engine is strictly forbidden in production. PostgreSQL is required.")
 
 DATABASES = {

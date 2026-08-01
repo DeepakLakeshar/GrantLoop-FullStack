@@ -51,9 +51,40 @@ def check_db_connection() -> str:
         return "unreachable"
 
 
+def check_redis_connection() -> str:
+    """
+    Tests active Redis caching and broker network reachability with a lightweight ping.
+    """
+    try:
+        from redis import Redis
+        redis_url = getattr(settings, "CELERY_BROKER_URL", os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
+        r = Redis.from_url(redis_url, socket_timeout=1)
+        if r.ping():
+            return "connected"
+    except Exception:
+        pass
+    return "unreachable"
+
+
+def check_celery_availability() -> str:
+    """
+    Tests whether Celery background workers are reachable via inspection ping.
+    Returns 'unavailable' if no worker responds within timeout without failing offline dev/test executions.
+    """
+    try:
+        from grantloop.celery import app as celery_app
+        inspector = celery_app.control.inspect(timeout=0.5)
+        stats = inspector.ping()
+        if stats and len(stats) > 0:
+            return "available"
+    except Exception:
+        pass
+    return "unavailable"
+
+
 class HealthCheckView(APIView):
     """
-    Public systemic diagnostic endpoint returning uptime telemetry, build signatures, and database connectivity.
+    Public systemic diagnostic endpoint returning uptime telemetry, build signatures, database connectivity, Redis reachability, and Celery worker availability.
     """
     permission_classes = [AllowAny]
     authentication_classes = []
@@ -61,7 +92,7 @@ class HealthCheckView(APIView):
     @extend_schema(
         tags=["Health"],
         summary="Public System Health Diagnostic & Telemetry Feed",
-        description="Returns live system uptime status, database connectivity checks, environment indicators, and application git hash signatures without exposing sensitive infrastructure credentials.",
+        description="Returns live system uptime status, database connectivity checks, Redis reachability, Celery worker availability, environment indicators, and application git hash signatures without exposing sensitive infrastructure credentials.",
         responses={
             200: OpenApiResponse(
                 response=OpenApiTypes.OBJECT,
@@ -73,11 +104,18 @@ class HealthCheckView(APIView):
                             "status": "ok",
                             "application": API_TITLE,
                             "version": API_VERSION,
+                            "current_version": API_VERSION,
                             "environment": os.environ.get("DJANGO_ENV", "development"),
                             "timestamp": "2026-08-01T20:55:00Z",
                             "uptime_seconds": 3600.5,
+                            "application_uptime": 3600.5,
                             "git_commit": "c4d12a9",
                             "database": "connected",
+                            "database_status": "connected",
+                            "redis": "connected",
+                            "redis_status": "connected",
+                            "celery_worker_availability": "available",
+                            "celery_status": "available",
                         },
                     )
                 ],
@@ -87,16 +125,29 @@ class HealthCheckView(APIView):
     )
     def get(self, request):
         db_status = check_db_connection()
+        redis_status = check_redis_connection()
+        celery_status = check_celery_availability()
+        uptime_val = round(time.time() - SERVER_START_TIME, 2)
+
         status_code = 200 if db_status == "connected" else 500
         payload = {
             "status": "ok" if status_code == 200 else "degraded",
             "application": API_TITLE,
             "version": API_VERSION,
+            "current_version": API_VERSION,
             "environment": os.environ.get("DJANGO_ENV", "development"),
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "uptime_seconds": round(time.time() - SERVER_START_TIME, 2),
+            "uptime_seconds": uptime_val,
+            "uptime": uptime_val,
+            "application_uptime": uptime_val,
             "git_commit": get_git_commit_hash(),
             "database": db_status,
+            "database_status": db_status,
+            "redis": redis_status,
+            "redis_status": redis_status,
+            "celery": celery_status,
+            "celery_status": celery_status,
+            "celery_worker_availability": celery_status,
         }
         return Response(payload, status=status_code)
 

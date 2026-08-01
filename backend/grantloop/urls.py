@@ -4,6 +4,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("", include("django_prometheus.urls")),
     # --- Public System Uptime, Versioning, and Release Changelog Feeds ---
     path("api/", include("apps.health.urls")),
     # --- OpenAPI 3.0 Documentation & Interactive Portal Endpoints ---
