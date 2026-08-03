@@ -1,0 +1,147 @@
+# GrantLoop Docker Compose Infrastructure Guide
+
+This manual outlines the architectural topology, networking isolation, storage orchestration, and operational commands for deploying the complete GrantLoop SaaS Backend using Docker Compose.
+
+---
+
+## 🏗️ Service Architecture Overview
+
+The container ecosystem consists of seven isolated, interoperable services engineered to execute without modifying core application logic:
+
+```mermaid
+graph TD
+    User([HTTP Clients]) -->|Port 80| Nginx[grantloop-nginx :80]
+    DevAdmin([Devops Monitor]) -->|Port 5555| Flower[grantloop-flower :5555]
+
+    Nginx -->|Proxy dynamic requests (:8000 Internal)| Backend[grantloop-backend]
+    Nginx -.->|Serve Static/Media| StaticVol[static_volume & media_volume]
+
+    Backend -->|PostgreSQL Wire| Postgres[(grantloop-postgres :5432)]
+    Backend -->|Cache / Broker| Redis[(grantloop-redis :6379)]
+    Backend -.->|Populate Assets| StaticVol
+
+    Worker[grantloop-celery-worker] --> Redis
+    Worker --> Postgres
+    Worker -.->|Read/Write Documents| MediaVol[media_volume]
+
+    Beat[grantloop-celery-beat] --> Redis
+    Beat --> Postgres
+
+    Flower -->|Inspect Tasks| Redis
+```
+
+### 1. **postgres** (`postgres:16`)
+- **Role:** Relational Database Engine.
+- **Security & Isolation:** Exposes port `5432` exclusively to internal container peers on `grantloop-network`; inaccessible directly from the host network.
+- **Resilience:** Healthcheck uses `pg_isready` to confirm connection readiness before granting dependent startup permissions.
+- **Storage:** Persists database schemas across lifecycle resets via the named volume `postgres_data`.
+
+### 2. **redis** (`redis:7-alpine`)
+- **Role:** High-speed in-memory broker for Celery queue task routing and Django session/caching storage.
+- **Configuration:** Launches with explicit persistence enabled (`--save 60 1`, writing memory snapshots to disk every 60 seconds if at least 1 key changed).
+- **Storage:** Persisted to disk via the named volume `redis_data`.
+
+### 3. **backend** (`grantloop-backend:latest`, custom built)
+- **Role:** Primary Django REST Framework application cluster powered by Gunicorn (`0.0.0.0:8000`).
+- **Network Protection:** Port `8000` is exposed strictly to internal network peers (`grantloop-nginx`). No direct host port mapping exists (`ports: 8000:8000` is explicitly excluded), forcing all external clients through the Nginx security proxy.
+- **Initialization Commands:** Automatically executes runtime initialization before opening WSGI worker ports:
+  1. `python manage.py migrate` — Upgrades database schema.
+  2. `python manage.py collectstatic --noinput` — Recompiles WhiteNoise and static assets into shared storage.
+  3. `gunicorn grantloop.wsgi:application` — Binds multi-process production server cluster.
+- **Development Ergonomics:** Mounts local repository `./backend:/app` for instant reload testing while safely mapping compiled static and media assets out to named volumes.
+
+### 4. **celery_worker** (`celery -A grantloop worker -l info`)
+- **Role:** Asynchronous task processing daemon handling report generation, notification emails, and financial audit background tasks. Reuses the `grantloop-backend` image footprint.
+
+### 5. **celery_beat** (`celery -A grantloop beat -l info`)
+- **Role:** Periodic task scheduler generating timed trigger events for automated financial reconciliation and database hygiene tasks. Reuses the `grantloop-backend` image footprint.
+
+### 6. **flower** (`celery -A grantloop flower --port=5555`)
+- **Role:** Real-time administrative monitor and REST API for inspecting Celery queue latency and worker execution trees.
+- **Access:** Exposed directly on host port `5555` ([http://localhost:5555/](http://localhost:5555/)).
+
+### 7. **nginx** (`nginx:alpine`)
+- **Role:** Production Reverse Proxy and static/media web asset server.
+- **Capabilities:** Direct traffic forwarding from host `80` down to internal `backend:8000`. Directly serves static contents (`/static/` and `/media/`) from Docker volumes without waking up Python WSGI worker processes.
+
+---
+
+## 🌐 Networking & Security Isolation
+- **Network Name:** `grantloop-network` (Docker Bridge Driver).
+- **Zero Hardcoded Secrets:** All credentials, database users, broker endpoints, and feature toggles are injected directly from the root `.env` configuration file during instantiation.
+- **Default Restart Policies:** Every daemon executes under `unless-stopped`, ensuring immediate auto-healing after kernel reboots or fatal worker crashes without manual operator intervention.
+
+---
+
+## 💾 Volume Topology
+| Named Volume | Container Mount Path | Purpose / Description |
+| :--- | :--- | :--- |
+| `postgres_data` | `/var/lib/postgresql/data` | Retains raw PostgreSQL binary table files across container removals. |
+| `redis_data` | `/data` | Maintains Redis RDB snapshots and write-ahead log structures. |
+| `static_volume` | `/app/staticfiles` (Shared) | Compiled static assets generated by `collectstatic`; read directly by Nginx. |
+| `media_volume` | `/app/media` (Shared) | User-uploaded verification attachments, PDFs, and export documents. |
+
+---
+
+## 🔄 Startup Sequence & Compose v2 Health Automation
+To guarantee zero race-conditions during deployment without maintaining legacy shell wrapper scripts (like `wait-for-it.sh` or `wait-for-db.sh`), startup synchronization utilizes **Docker Compose v2 Native Dependency Health Checks** (`depends_on: <service>: condition: service_healthy`):
+
+1. **Phase 1 (Storage):** `postgres` and `redis` boot up independently on network inception.
+2. **Phase 2 (Core Application):** `backend` remains blocked in waiting status until `pg_isready` reports green on `postgres` and `redis-cli ping` responds with `PONG`. Once unblocked, `backend` migrates the schema and boots Gunicorn.
+3. **Phase 3 (Workers & Proxies):**
+   - `celery_worker`, `celery_beat`, and `flower` start immediately after `backend` initiates state migration.
+   - `nginx` waits until `backend` clears its HTTP diagnostic check (`http://backend:8000/api/health/`), confirming active WSGI readiness before opening the public gate on Port 80.
+
+---
+
+## 🚀 How to Launch & Operate the Stack
+
+### 1. Preparation
+Ensure a valid environment parameter configuration exists at the project root by copying the documented template (see [`.env.example`](file:///.env.example)):
+```bash
+# Copy boilerplate configuration and inject secure production credentials
+cp .env.example .env
+```
+
+Or initialize `.env` directly with `DATABASE_URL` preference:
+```bash
+cat << EOF > .env
+DJANGO_SETTINGS_MODULE=grantloop.settings.prod
+DJANGO_SECRET_KEY=super-secret-production-key-change-me
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,backend
+# Preferred database configuration string (dj-database-url format):
+DATABASE_URL=postgres://grantloop:secure_postgres_password_here@postgres:5432/grantloop
+# Individual DB fallback variables (used by Postgres container & django):
+DB_NAME=grantloop
+DB_USER=grantloop
+DB_PASSWORD=secure_postgres_password_here
+DB_HOST=postgres
+DB_PORT=5432
+CONN_MAX_AGE=600
+DB_CONN_HEALTH_CHECKS=True
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+EOF
+```
+
+### 2. Build and Start Application Cluster
+Execute Docker Compose in detached mode to pull images, build the Python runtime layer, and sequence container startups:
+```bash
+docker compose up -d --build
+```
+
+### 3. Verify Container Health
+Monitor real-time status transitions as the cluster performs self-diagnostics:
+```bash
+docker compose ps
+```
+
+### 4. Access Application Endpoints
+- **Public API Gateway (via Nginx):** [http://localhost/api/health/](http://localhost/api/health/) or [http://localhost/api/docs/](http://localhost/api/docs/) (Port 80 is the sole entrypoint to the Django application).
+- **Celery Task Monitor (Flower):** [http://localhost:5555/](http://localhost:5555/)
+
+### 5. Managing Lifecycle
+- **View aggregated system logs:** `docker compose logs -f --tail=50`
+- **Graceful container shutdown (preserving volumes):** `docker compose stop`
+- **Teardown stack and purge containers:** `docker compose down`
+- **Full factory wipe (WARNING: Deletes database volumes):** `docker compose down -v`
