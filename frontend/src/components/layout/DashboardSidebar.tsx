@@ -43,7 +43,9 @@ const ROLE_LINKS: Record<UserRole, SidebarLink[]> = {
   ],
   admin: [
     { to: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
-    { to: "/dashboard/admin/users", label: "Users & NGOs", icon: Users },
+    { to: "/dashboard/admin/campaigns", label: "Campaign Approvals", icon: ShieldCheck },
+    { to: "/dashboard/admin/payouts", label: "Payout Management", icon: Wallet },
+    { to: "/dashboard/admin/reports", label: "Reports", icon: BarChart3 },
     { to: "/dashboard/admin/audit", label: "Audit Log", icon: ScrollText },
   ],
 };

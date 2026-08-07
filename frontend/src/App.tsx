@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { PageStub } from "@/pages/PageStub";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
@@ -10,7 +10,16 @@ import { CampaignDetailPage } from "@/pages/public/CampaignDetailPage";
 import { PricingPage } from "@/pages/public/PricingPage";
 import { NgoDashboardPage } from "@/pages/dashboard/NgoDashboardPage";
 import { InstitutionDashboardPage } from "@/pages/dashboard/InstitutionDashboardPage";
+import { DonorDashboardPage } from "@/pages/dashboard/DonorDashboardPage";
+import { ProfilePage } from "@/pages/dashboard/ProfilePage";
+import { SettingsPage } from "@/pages/dashboard/SettingsPage";
 import { PublicRoute, ProtectedRoute, RoleProtectedRoute } from "@/routes/RouteGuards";
+
+import { AdminDashboardLayout } from "@/pages/dashboard/Admin/AdminDashboardLayout";
+import { AdminDashboardOverview } from "@/pages/dashboard/Admin/AdminDashboardOverview";
+import { CampaignApprovalQueue } from "@/pages/dashboard/Admin/CampaignApprovalQueue";
+import { AdminPayoutManagement } from "@/pages/dashboard/Admin/AdminPayoutManagement";
+import { AdminReports } from "@/pages/dashboard/Admin/AdminReports";
 
 // Route map — mirrors the frozen Frontend Architecture Review, section 4,
 // plus the seven approved new screens. Auth pages are wrapped in
@@ -39,8 +48,9 @@ export default function App() {
       {/* Any logged-in user, regardless of role */}
       <Route element={<ProtectedRoute />}>
         <Route path="/causes/:id/donate" element={<PageStub title="Donate" />} />
-        <Route path="/profile" element={<PageStub title="Profile" note="New screen — approved addition" />} />
-        <Route path="/settings" element={<PageStub title="Settings" note="New screen — approved addition" />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/notifications" element={<Navigate to="/settings" replace />} />
         <Route path="/documents/:id" element={<PageStub title="Document Viewer" note="New screen — approved addition" />} />
       </Route>
 
@@ -67,19 +77,18 @@ export default function App() {
 
       {/* Donor only */}
       <Route element={<RoleProtectedRoute allowedRoles={["donor"]} />}>
-        <Route path="/dashboard/donor" element={<PageStub title="Donor Dashboard" />} />
+        <Route path="/dashboard/donor" element={<DonorDashboardPage />} />
       </Route>
 
       {/* Admin only */}
       <Route element={<RoleProtectedRoute allowedRoles={["admin"]} />}>
-        <Route
-          path="/dashboard/admin"
-          element={<PageStub title="Admin Dashboard" note="New screen — approved addition" />}
-        />
-        <Route
-          path="/dashboard/admin/audit"
-          element={<PageStub title="Audit Log" note="Admin-only, never donor-visible" />}
-        />
+        <Route path="/dashboard/admin" element={<AdminDashboardLayout />}>
+          <Route index element={<AdminDashboardOverview />} />
+          <Route path="campaigns" element={<CampaignApprovalQueue />} />
+          <Route path="payouts" element={<AdminPayoutManagement />} />
+          <Route path="reports" element={<AdminReports />} />
+          <Route path="audit" element={<PageStub title="Audit Log" note="Admin-only, never donor-visible" />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<PageStub title="Not found" />} />
