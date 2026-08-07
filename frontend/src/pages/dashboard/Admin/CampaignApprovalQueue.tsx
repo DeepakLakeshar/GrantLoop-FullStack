@@ -21,7 +21,7 @@ export function CampaignApprovalQueue() {
   });
   const [searchInput, setSearchInput] = useState("");
 
-  const { data, isLoading, error } = useCampaignList(filters);
+  const { data, error } = useCampaignList(filters);
 
   const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -33,8 +33,7 @@ export function CampaignApprovalQueue() {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
     } catch (err) {
-      alert("Failed to verify campaign. Please try again.");
-      console.error(err);
+      alert(`Failed to ${status === "approved" ? "approve" : "reject"} campaign. Please try again.`);
     } finally {
       setProcessingId(null);
     }
@@ -54,7 +53,7 @@ export function CampaignApprovalQueue() {
           <Link to={`/causes/${c.id}`} className="font-bold text-primary hover:underline">
             {c.title}
           </Link>
-          <div className="text-sm text-gray-500">{c.category.name}</div>
+          <div className="text-sm text-gray-500">{c.category?.name || "Uncategorized"}</div>
         </div>
       ),
     },
@@ -63,8 +62,7 @@ export function CampaignApprovalQueue() {
       header: "Creator",
       render: (c) => (
         <div className="text-sm">
-          <p className="font-medium text-gray-900">{c.created_by.full_name}</p>
-          <p className="text-gray-500">{c.created_by.email}</p>
+          <p className="font-medium text-gray-900">{c.created_by.email}</p>
         </div>
       ),
     },
@@ -111,7 +109,7 @@ export function CampaignApprovalQueue() {
   if (error) {
     return (
       <ErrorBanner
-        title="Failed to load campaigns"
+        kind="unknown"
         message="There was an error loading the campaign approval queue."
       />
     );
@@ -139,16 +137,17 @@ export function CampaignApprovalQueue() {
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <DataTable
-          columns={columns}
-          data={data?.results ?? []}
-          isLoading={isLoading}
+          columns={columns as any}
+          rows={data?.results ?? []}
+          rowKey={(c: any) => c.id}
           emptyMessage="No campaigns pending verification at this time."
         />
         
         {data && data.count > (filters.pageSize || 10) && (
           <Pagination
-            currentPage={filters.page || 1}
-            totalPages={Math.ceil(data.count / (filters.pageSize || 10))}
+            page={filters.page || 1}
+            pageSize={filters.pageSize || 10}
+            totalCount={data.count}
             onPageChange={(p) => setFilters((prev) => ({ ...prev, page: p }))}
           />
         )}

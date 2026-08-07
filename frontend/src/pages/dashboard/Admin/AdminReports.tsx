@@ -63,7 +63,6 @@ export function AdminReports() {
       }
     } catch (err) {
       alert("Failed to export report. Please try again.");
-      console.error(err);
     } finally {
       setDownloading(null);
     }

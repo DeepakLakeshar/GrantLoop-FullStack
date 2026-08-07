@@ -6,6 +6,7 @@ export type UserRole = "donor" | "ngo" | "institution" | "execution_partner" | "
 export interface User {
   id: string;
   username: string;
+  email: string;
   role: UserRole;
 }
 
@@ -175,6 +176,24 @@ export interface FundRelease {
   released_at: string | null;
   created_at: string;
   approvals: FundReleaseApproval[];
+}
+
+export type PayoutStatus = "pending" | "approved" | "processing" | "completed" | "failed" | "rejected";
+
+export interface Payout {
+  id: string;
+  campaign: string;
+  campaign_title?: string;
+  ngo?: string;
+  ngo_email?: string;
+  requested_amount: string;
+  approved_amount: string | null;
+  currency: string;
+  status: PayoutStatus;
+  gateway_type?: string;
+  account_reference?: string;
+  transfer_reference?: string;
+  created_at: string;
 }
 
 export type DocumentType =

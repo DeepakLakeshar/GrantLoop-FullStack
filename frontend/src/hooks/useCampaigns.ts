@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { campaignsApi, type CampaignFilters } from "@/lib/mock/campaignsApi";
+import { campaignsApi, type CampaignFilters } from "@/lib/api/campaigns";
 
 export function useCampaignList(filters: CampaignFilters) {
   return useQuery({

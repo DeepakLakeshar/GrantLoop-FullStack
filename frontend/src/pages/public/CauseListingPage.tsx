@@ -8,7 +8,7 @@ import { SearchBar } from "@/components/shared/SearchBar";
 import { Pagination } from "@/components/shared/Pagination";
 import { Spinner } from "@/components/shared/Spinner";
 import { useCampaignList, useCategories } from "@/hooks/useCampaigns";
-import type { CampaignFilters } from "@/lib/mock/campaignsApi";
+import type { CampaignFilters } from "@/lib/api/campaigns";
 
 export function CauseListingPage() {
   const [searchParams] = useSearchParams();

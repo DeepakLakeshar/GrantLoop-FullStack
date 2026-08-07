@@ -5,7 +5,6 @@ import { ProgressBar } from "@/components/shared/ProgressBar";
 import type { Campaign } from "@/types/entities";
 import { getDaysRemaining } from "@/types/entities";
 import { formatCurrency, formatLocation } from "@/lib/format";
-import { getDonorCount } from "@/lib/mock/mockData";
 
 interface CampaignCardProps {
   campaign: Campaign;
@@ -15,7 +14,7 @@ interface CampaignCardProps {
  * featured campaigns, and Related Campaigns all render this exact card. */
 export function CampaignCard({ campaign }: CampaignCardProps) {
   const daysRemaining = getDaysRemaining(campaign);
-  const donorCount = getDonorCount(campaign.id); // becomes campaign.donor_count from the API later
+  const donorCount = (campaign as any).donor_count ?? 0; // becomes campaign.donor_count from the API later
   const location = formatLocation(campaign.location_city, campaign.location_country);
 
   return (

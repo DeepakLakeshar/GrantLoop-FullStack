@@ -69,3 +69,17 @@ apiClient.interceptors.response.use(
     return Promise.reject(normalizeAxiosError(error));
   }
 );
+
+/**
+ * Standardizes building URLSearchParams from a filter object, ignoring undefined/null values.
+ * Useful for unifying pagination and filter serialization across all API services.
+ */
+export function buildUrlParams(filters: Record<string, string | number | boolean | undefined | null>): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && value !== "") {
+      params.append(key, String(value));
+    }
+  }
+  return params;
+}

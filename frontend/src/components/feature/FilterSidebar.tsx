@@ -1,5 +1,5 @@
 import type { Category } from "@/types/entities";
-import type { CampaignFilters } from "@/lib/mock/campaignsApi";
+import type { CampaignFilters } from "@/lib/api/campaigns";
 
 interface FilterSidebarProps {
   categories: Category[];

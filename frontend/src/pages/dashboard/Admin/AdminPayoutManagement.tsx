@@ -8,7 +8,7 @@ import { Pagination } from "@/components/shared/Pagination";
 import { Spinner } from "@/components/shared/Spinner";
 import { ErrorBanner } from "@/components/shared/ErrorBanner";
 import { formatCurrency, formatDate } from "@/lib/format";
-import type { FundRelease } from "@/types/entities";
+import type { Payout } from "@/types/entities";
 import { CheckCircle, XCircle, RefreshCw, Send, ListFilter } from "lucide-react";
 
 export function AdminPayoutManagement() {
@@ -19,7 +19,7 @@ export function AdminPayoutManagement() {
     pageSize: 10,
   });
 
-  const { data, isLoading, error } = usePayoutsList(filters);
+  const { data, error } = usePayoutsList(filters);
 
   const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -42,13 +42,12 @@ export function AdminPayoutManagement() {
       queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
     } catch (err) {
       alert(`Failed to ${action} payout. Please try again.`);
-      console.error(err);
     } finally {
       setProcessingId(null);
     }
   };
 
-  const columns: DataTableColumn<FundRelease>[] = [
+  const columns: DataTableColumn<Payout>[] = [
     {
       key: "campaign",
       header: "Campaign",
@@ -143,7 +142,7 @@ export function AdminPayoutManagement() {
   if (error) {
     return (
       <ErrorBanner
-        title="Failed to load payouts"
+        kind="unknown"
         message="There was an error loading the payout management queue."
       />
     );
@@ -177,16 +176,17 @@ export function AdminPayoutManagement() {
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <DataTable
-          columns={columns}
-          data={data?.results ?? []}
-          isLoading={isLoading}
+          columns={columns as any}
+          rows={data?.results ?? []}
+          rowKey={(p: any) => p.id}
           emptyMessage={`No payouts found matching status "${filters.status || "all"}".`}
         />
         
         {data && data.count > (filters.pageSize || 10) && (
           <Pagination
-            currentPage={filters.page || 1}
-            totalPages={Math.ceil(data.count / (filters.pageSize || 10))}
+            page={filters.page || 1}
+            pageSize={filters.pageSize || 10}
+            totalCount={data.count}
             onPageChange={(p) => setFilters((prev) => ({ ...prev, page: p }))}
           />
         )}

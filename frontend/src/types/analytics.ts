@@ -1,4 +1,4 @@
-import { Campaign, Donation, Notification, FundRelease } from "./entities";
+// No entities imported
 
 export interface RecentCampaign {
   id: string;

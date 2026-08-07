@@ -42,8 +42,9 @@ paths:
     get:
       operationId: health_retrieve
       description: Returns live system uptime status, database connectivity checks,
-        environment indicators, and application git hash signatures without exposing
-        sensitive infrastructure credentials.
+        Redis reachability, Celery worker availability, environment indicators, and
+        application git hash signatures without exposing sensitive infrastructure
+        credentials.
       summary: Public System Health Diagnostic & Telemetry Feed
       tags:
       - Health
@@ -62,11 +63,18 @@ paths:
                     status: ok
                     application: GrantLoop API & Developer Portal
                     version: 1.0.0
+                    current_version: 1.0.0
                     environment: development
                     timestamp: '2026-08-01T20:55:00Z'
                     uptime_seconds: 3600.5
+                    application_uptime: 3600.5
                     git_commit: c4d12a9
                     database: connected
+                    database_status: connected
+                    redis: connected
+                    redis_status: connected
+                    celery_worker_availability: available
+                    celery_status: available
                   summary: Health Report
           description: System diagnostic report generated successfully.
         '500':
@@ -93,7 +101,7 @@ paths:
                   value:
                     api_version: 1.0.0
                     build: c4d12a9
-                    released_at: '2026-08-01'
+                    released_at: '2026-08-07'
                   summary: Version Feed
           description: Version compatibility metadata.
   /api/changelog/:
@@ -117,11 +125,45 @@ paths:
                 ChangelogOutput:
                   value:
                     version: 1.0.0
-                    released_at: '2026-08-01'
+                    released_at: '2026-08-07'
                     summary: Full Phase 10 OpenAPI 3.0 Documentation & Developer Portal
                       Release.
                   summary: Changelog Output
           description: Changelog retrieved.
+  /api/performance/:
+    get:
+      operationId: performance_retrieve
+      description: Returns cache hit ratio, miss counts, Redis reachability, slow
+        endpoint profiles, query counts, and server uptime.
+      summary: Retrieve Platform Performance, Caching & Redis Diagnostics
+      tags:
+      - Performance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Real-time performance telemetry JSON dictionary.
+        '401':
+          description: Authentication required.
+        '403':
+          description: Permission denied. Exclusive admin access required.
+  /api/v1/performance/:
+    get:
+      operationId: performance_retrieve_2
+      description: Returns cache hit ratio, miss counts, Redis reachability, slow
+        endpoint profiles, query counts, and server uptime.
+      summary: Retrieve Platform Performance, Caching & Redis Diagnostics
+      tags:
+      - Performance
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Real-time performance telemetry JSON dictionary.
+        '401':
+          description: Authentication required.
+        '403':
+          description: Permission denied. Exclusive admin access required.
   /api/schema/:
     get:
       operationId: schema_retrieve
@@ -4087,26 +4129,6 @@ paths:
           description: Internal Server Error - Upstream gateway exception or database
             connection disruption.
   /api/v1/beneficiaries/{id}/:
-    delete:
-      operationId: beneficiaries_destroy
-      description: |-
-        API viewset for managing beneficiary records.
-        Delegates all queries and mutations to the service layer.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this beneficiary.
-        required: true
-      tags:
-      - beneficiaries
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
     get:
       operationId: beneficiaries_retrieve
       description: |-
@@ -4278,6 +4300,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/BeneficiaryWrite'
           description: ''
+    delete:
+      operationId: beneficiaries_destroy
+      description: |-
+        API viewset for managing beneficiary records.
+        Delegates all queries and mutations to the service layer.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this beneficiary.
+        required: true
+      tags:
+      - beneficiaries
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
     put:
       operationId: beneficiaries_update
       description: |-
@@ -5372,27 +5414,6 @@ paths:
                 $ref: '#/components/schemas/Milestone'
           description: ''
   /api/v1/milestones/{id}/:
-    delete:
-      operationId: milestones_destroy
-      description: |-
-        Milestones are public evidence of campaign progress (readable by
-        anyone), but writes are gated: owning NGO, institution, or admin only
-        — enforced in services.py, not here (this view only orchestrates).
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this milestone.
-        required: true
-      tags:
-      - milestones
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
     get:
       operationId: milestones_retrieve
       description: |-
@@ -5454,6 +5475,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/Milestone'
           description: ''
+    delete:
+      operationId: milestones_destroy
+      description: |-
+        Milestones are public evidence of campaign progress (readable by
+        anyone), but writes are gated: owning NGO, institution, or admin only
+        — enforced in services.py, not here (this view only orchestrates).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this milestone.
+        required: true
+      tags:
+      - milestones
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
     put:
       operationId: milestones_update
       description: |-
@@ -5720,29 +5762,6 @@ paths:
           description: Internal Server Error - Upstream gateway exception or database
             connection disruption.
   /api/v1/campaign-updates/{id}/:
-    delete:
-      operationId: campaign_updates_destroy
-      description: |-
-        Updates are append-only once posted — no edit endpoint, only create
-        and delete. This mirrors TransparencyLog's immutability: donors
-        should be able to trust that an update they read wasn't quietly
-        altered after the fact. A mistaken post gets deleted and reposted,
-        not silently edited.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this campaign update.
-        required: true
-      tags:
-      - campaign-updates
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
     get:
       operationId: campaign_updates_retrieve
       description: |-
@@ -5770,6 +5789,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/CampaignUpdate'
           description: ''
+    delete:
+      operationId: campaign_updates_destroy
+      description: |-
+        Updates are append-only once posted — no edit endpoint, only create
+        and delete. This mirrors TransparencyLog's immutability: donors
+        should be able to trust that an update they read wasn't quietly
+        altered after the fact. A mistaken post gets deleted and reposted,
+        not silently edited.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this campaign update.
+        required: true
+      tags:
+      - campaign-updates
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/documents/:
     get:
       operationId: documents_list
@@ -5953,28 +5995,6 @@ paths:
           description: Internal Server Error - Upstream gateway exception or database
             connection disruption.
   /api/v1/documents/{id}/:
-    delete:
-      operationId: documents_destroy
-      description: |-
-        Unlike Milestones/CampaignUpdates, Documents require authentication
-        even to read — beneficiary-scoped documents (government ID, etc.)
-        are personal data, not public evidence. get_queryset narrows further:
-        a non-privileged user never sees beneficiary-scoped rows at all.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this document.
-        required: true
-      tags:
-      - documents
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
     get:
       operationId: documents_retrieve
       description: |-
@@ -6001,6 +6021,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/Document'
           description: ''
+    delete:
+      operationId: documents_destroy
+      description: |-
+        Unlike Milestones/CampaignUpdates, Documents require authentication
+        even to read — beneficiary-scoped documents (government ID, etc.)
+        are personal data, not public evidence. get_queryset narrows further:
+        a non-privileged user never sees beneficiary-scoped rows at all.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this document.
+        required: true
+      tags:
+      - documents
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/documents/{id}/review/:
     post:
       operationId: documents_review_create
@@ -7303,27 +7345,6 @@ paths:
           description: Internal Server Error - Upstream gateway exception or database
             connection disruption.
   /api/v1/payouts/{id}/:
-    delete:
-      operationId: payouts_destroy
-      description: |-
-        Thin ViewSet managing Payout lifecycle operations.
-        Delegates entirely to services.py for business logic and state validation.
-        Enforces 403 Forbidden responses for unauthorized access attempts against existing rows.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this payout.
-        required: true
-      tags:
-      - payouts
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
     get:
       operationId: payouts_retrieve
       description: |-
@@ -7374,6 +7395,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/PayoutDetail'
           description: ''
+    delete:
+      operationId: payouts_destroy
+      description: |-
+        Thin ViewSet managing Payout lifecycle operations.
+        Delegates entirely to services.py for business logic and state validation.
+        Enforces 403 Forbidden responses for unauthorized access attempts against existing rows.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this payout.
+        required: true
+      tags:
+      - payouts
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
     put:
       operationId: payouts_update
       description: |-

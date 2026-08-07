@@ -9,16 +9,18 @@ import { DataTable, type DataTableColumn } from "@/components/shared/DataTable";
 import { Spinner } from "@/components/shared/Spinner";
 import { useAuth } from "@/context/AuthContext";
 import { useMyCampaigns } from "@/hooks/useCampaigns";
+import { useNgoMetrics } from "@/hooks/useNgoDashboard";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Campaign } from "@/types/entities";
 
 export function NgoDashboardPage() {
   const { user } = useAuth();
-  const { data: campaigns, isLoading } = useMyCampaigns(user?.id);
+  const { data: campaigns, isLoading: isCampaignsLoading } = useMyCampaigns(user?.id);
+  const { data: metrics } = useNgoMetrics();
 
-  const totalRaised = campaigns?.reduce((sum, c) => sum + c.raised_amount, 0) ?? 0;
-  const liveCount = campaigns?.filter((c) => c.status === "live").length ?? 0;
-  const pendingCount = campaigns?.filter((c) => c.status === "pending_verification").length ?? 0;
+  const totalRaised = metrics?.total_raised ?? 0;
+  const liveCount = metrics?.live_campaigns_count ?? 0;
+  const pendingCount = metrics?.pending_verifications_count ?? 0;
 
   const columns: DataTableColumn<Campaign>[] = [
     {
@@ -72,7 +74,7 @@ export function NgoDashboardPage() {
           <div className="px-6 py-4 border-b border-outline-variant">
             <h2 className="font-headline-sm text-headline-sm text-primary">All campaigns</h2>
           </div>
-          {isLoading ? (
+          {isCampaignsLoading ? (
             <div className="py-16 flex justify-center">
               <Spinner size={24} className="text-primary" />
             </div>

@@ -1,21 +1,19 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
-import type { Notification } from "@/types/entities";
-
-// Placeholder data shape until wired to GET /api/v1/notifications/.
-// Structure matches the frozen Notification type exactly.
-const MOCK_NOTIFICATIONS: Notification[] = [];
+import { Spinner } from "@/components/shared/Spinner";
+import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/hooks/useNotifications";
+import { formatDate } from "@/lib/format";
 
 interface NotificationPanelProps {
   onClose: () => void;
 }
 
-/** Built from the same card/list styling already used everywhere else
- * (surface-container-lowest card, outline-variant border, label-caps
- * timestamps). No new visual pattern. */
 export function NotificationPanel({ onClose }: NotificationPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const { data: notificationsData, isLoading } = useNotifications();
+  const { mutate: markRead } = useMarkNotificationRead();
+  const { mutate: markAllRead, isPending: isMarkingAll } = useMarkAllNotificationsRead();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -25,6 +23,8 @@ export function NotificationPanel({ onClose }: NotificationPanelProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  const notifications = notificationsData?.results ?? [];
+
   return (
     <div
       ref={ref}
@@ -32,29 +32,42 @@ export function NotificationPanel({ onClose }: NotificationPanelProps) {
     >
       <div className="px-6 py-4 border-b border-outline-variant flex justify-between items-center">
         <h3 className="font-headline-sm text-headline-sm text-primary">Notifications</h3>
-        <button className="text-label-caps text-primary font-bold hover:underline">
-          Mark all read
-        </button>
+        {notifications.length > 0 && (
+          <button
+            onClick={() => markAllRead()}
+            disabled={isMarkingAll}
+            className="text-label-caps text-primary font-bold hover:underline disabled:opacity-50"
+          >
+            Mark all read
+          </button>
+        )}
       </div>
       <div className="overflow-y-auto flex-1">
-        {MOCK_NOTIFICATIONS.length === 0 ? (
+        {isLoading ? (
+          <div className="px-6 py-16 flex justify-center">
+            <Spinner size={24} />
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="px-6 py-16 text-center">
             <CheckCircle2 className="w-8 h-8 text-outline-variant mx-auto mb-3" />
             <p className="text-body-md text-on-surface-variant">You're all caught up.</p>
           </div>
         ) : (
           <ul className="divide-y divide-outline-variant">
-            {MOCK_NOTIFICATIONS.map((n) => (
+            {notifications.map((n) => (
               <li
                 key={n.id}
-                className={`px-6 py-4 hover:bg-surface-container-low transition-colors ${
-                  !n.is_read ? "bg-primary-fixed/20" : ""
+                className={`px-6 py-4 transition-colors relative ${
+                  !n.is_read ? "bg-primary-fixed/20 hover:bg-primary-fixed/30 cursor-pointer" : "hover:bg-surface-container-low"
                 }`}
+                onClick={() => {
+                  if (!n.is_read) markRead(n.id);
+                }}
               >
                 <p className="font-body-md font-bold text-primary">{n.title}</p>
                 <p className="text-data-table text-on-surface-variant mt-1">{n.body}</p>
                 <span className="text-label-caps font-label-caps text-on-surface-variant mt-1 block">
-                  {n.created_at}
+                  {formatDate(n.created_at)}
                 </span>
               </li>
             ))}
@@ -62,7 +75,7 @@ export function NotificationPanel({ onClose }: NotificationPanelProps) {
         )}
       </div>
       <div className="px-6 py-3 border-t border-outline-variant text-center">
-        <Link to="/settings/notifications" className="text-label-caps text-primary font-bold hover:underline">
+        <Link to="/settings/notifications" className="text-label-caps text-primary font-bold hover:underline" onClick={onClose}>
           Notification settings
         </Link>
       </div>

@@ -145,3 +145,87 @@ docker compose ps
 - **Graceful container shutdown (preserving volumes):** `docker compose stop`
 - **Teardown stack and purge containers:** `docker compose down`
 - **Full factory wipe (WARNING: Deletes database volumes):** `docker compose down -v`
+
+---
+
+## 🏭 Production Deployment
+
+The `docker-compose.prod.yml` manifest is strictly designed for production environments. It binds production environment variables, configures PostgreSQL and Redis in persistent modes, and runs the Django application using the Gunicorn WSGI server. The backend is completely isolated from the host network and only accessible through Nginx.
+
+### Execution & Operations
+
+**1. Build the Production Images**
+```bash
+docker compose -f docker-compose.prod.yml build
+```
+
+**2. Start the Production Stack (Detached)**
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+**3. Stop and Remove Containers**
+```bash
+docker compose -f docker-compose.prod.yml down
+```
+
+**4. View Production Logs**
+```bash
+# All services
+docker compose -f docker-compose.prod.yml logs -f --tail=100
+
+# Specific service (e.g., backend)
+docker compose -f docker-compose.prod.yml logs -f backend
+```
+
+**5. Restart Services**
+```bash
+docker compose -f docker-compose.prod.yml restart
+```
+
+**6. Health Verification**
+```bash
+docker compose -f docker-compose.prod.yml ps
+# Verify that backend, postgres, and redis show (healthy) status
+```
+
+**7. Scaling Celery Workers**
+To handle higher asynchronous load, scale the `celery_worker` instances (Note: Ensure sufficient CPU/RAM resources):
+```bash
+docker compose -f docker-compose.prod.yml up -d --scale celery_worker=3
+```
+
+**8. Flower Dashboard**
+The production Flower dashboard runs on port 5555.
+Access it via `http://<your-server-ip>:5555/` to monitor active Celery tasks and worker health. Ensure this port is protected by a firewall or VPN in a real production environment.
+
+---
+
+## 🛡️ Nginx Production Architecture (Phase 13 Step 4)
+
+The Nginx configuration (`nginx/nginx.conf` and `nginx/conf.d/default.conf`) is designed as a highly optimized, enterprise-grade reverse proxy securing the internal backend cluster.
+
+### Request Flow
+External HTTP/HTTPS traffic hits Nginx. If the request matches `/static/` or `/media/`, Nginx resolves the file directly from the mounted shared Docker volumes without waking up Python backend processes. If the request matches `/api/`, Nginx forwards it to the internal `backend:8000` via HTTP/1.1 utilizing a keep-alive connection pool (`keepalive 32;`).
+
+### HTTPS Redirect & Let's Encrypt
+A dedicated server block listens on Port 80 and issues a `301 Moved Permanently` redirect to force all traffic to HTTPS. A placeholder block is prepared for Port 443 with Let's Encrypt `fullchain.pem` and `privkey.pem` directives ready for activation once DNS is propagated.
+
+### Security Headers
+- **X-Frame-Options (`DENY`)**: Prevents clickjacking by forbidding the application from rendering inside an iframe.
+- **X-Content-Type-Options (`nosniff`)**: Mitigates MIME-type confusion attacks.
+- **Referrer-Policy (`strict-origin-when-cross-origin`)**: Prevents leaking secure origin URLs to external domains.
+- **Strict-Transport-Security (`HSTS`)**: Enforces HTTPS-only connections at the browser level for 1 year.
+- **Content-Security-Policy (CSP)**: Hardened layout with a documented tradeoff (allows `unsafe-inline` styles and scripts) to ensure the Swagger Interactive UI and frontend local development tools don't immediately break upon deployment.
+
+### Performance Optimizations
+- **Static & Media Caching:** Static framework assets are cached for 1 year (`expires 1y;`). User-uploaded media is cached for 30 days (`expires 30d;`). The `Cache-Control` header explicitly directs downstream caches to optimize these files.
+- **API Cache Busting:** The `/api/health/` route explicitly strips caching (`max-age=0, no-store`) to ensure orchestration tools always receive live heartbeat measurements. All other `/api/` endpoints forbid browser caching (`no-store`).
+- **Gzip Compression:** Transmitted text, JSON, SVG, CSS, and JS payloads are compressed on-the-fly (`gzip_comp_level 5;`) to minimize latency without overloading CPU resources.
+- **Upload Limits:** Accommodates high-volume document ingestion via `client_max_body_size 50M;`.
+
+### Traffic Control & Observability
+- **Rate Limiting:** Protects the `/api/` endpoint against brute-force abuse with a strict `100 requests / minute` cap per IP address.
+- **Slow Client Protection:** Timeouts (`client_header_timeout`, `client_body_timeout`) are capped at 12s to automatically disconnect Slowloris DDoS attempts. 
+- **Timeouts:** Proxy timeouts are elevated to `120s` explicitly to permit the generation of heavy, synchronous financial reports.
+- **Logging:** Emits separate `access.log` and `error.log`. The structured access log captures and passes through the unique `X-Request-ID` injected by Django for end-to-end distributed tracing.
