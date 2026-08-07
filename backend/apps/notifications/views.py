@@ -1,6 +1,8 @@
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from apps.cache_utils.decorators import cached_endpoint
+from apps.cache_utils.keys import NAMESPACE_NOTIFICATIONS, TTL_30_SECONDS
 
 from .permissions import NotificationPermission, IsNotificationOwner
 from .serializers import NotificationDetailSerializer, NotificationListSerializer
@@ -18,6 +20,7 @@ class NotificationViewSet(viewsets.ViewSet):
     permission_classes = [NotificationPermission, IsNotificationOwner]
     serializer_class = NotificationListSerializer
 
+    @cached_endpoint(timeout=TTL_30_SECONDS, namespace=NAMESPACE_NOTIFICATIONS, vary_on_user=True)
     def list(self, request):
         """
         GET /notifications/
@@ -28,6 +31,7 @@ class NotificationViewSet(viewsets.ViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="unread-count")
+    @cached_endpoint(timeout=TTL_30_SECONDS, namespace=NAMESPACE_NOTIFICATIONS, vary_on_user=True)
     def unread_count(self, request):
         """
         GET /notifications/unread-count/

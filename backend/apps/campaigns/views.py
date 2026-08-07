@@ -8,6 +8,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from grantloop.openapi import campaign_viewset_schema
+from apps.cache_utils.decorators import cached_endpoint
+from apps.cache_utils.keys import NAMESPACE_CAMPAIGNS, TTL_1_MINUTE, TTL_5_MINUTES
 
 from common.permissions import IsInstitutionOrAdmin, IsNGO, IsOwnerNGOOrAdmin
 from . import services
@@ -97,6 +99,14 @@ class CampaignViewSet(viewsets.ModelViewSet):
             qs = qs.order_by(ordering)
 
         return qs
+
+    @cached_endpoint(timeout=TTL_1_MINUTE, namespace=NAMESPACE_CAMPAIGNS, vary_on_user=True)
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @cached_endpoint(timeout=TTL_5_MINUTES, namespace=NAMESPACE_CAMPAIGNS, vary_on_user=True)
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         campaign = services.create_campaign(created_by=self.request.user, **serializer.validated_data)

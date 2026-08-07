@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from grantloop.openapi import report_export_schema, report_json_schema
+from apps.cache_utils.decorators import cached_endpoint
+from apps.cache_utils.keys import NAMESPACE_REPORTS, TTL_5_MINUTES
 
 from . import services, serializers, permissions, throttles
 from .constants import VALID_EXPORT_FORMATS, ReportType
@@ -24,6 +26,7 @@ class BaseReportJSONView(APIView):
     serializer_class = None
 
     @report_json_schema
+    @cached_endpoint(timeout=TTL_5_MINUTES, namespace=NAMESPACE_REPORTS, vary_on_user=True)
     def get(self, request):
         params = request.query_params.dict()
         if params.get("schedule") == "true":

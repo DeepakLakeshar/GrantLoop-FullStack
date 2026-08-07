@@ -149,6 +149,18 @@ class HealthCheckView(APIView):
             "celery_status": celery_status,
             "celery_worker_availability": celery_status,
         }
+        try:
+            from apps.performance.services import check_detailed_redis_health
+            detailed_redis = check_detailed_redis_health()
+            payload.update({
+                "redis_latency": detailed_redis.get("redis_latency", "N/A"),
+                "cache_connectivity": detailed_redis.get("cache_connectivity", "connected"),
+                "memory_usage": detailed_redis.get("memory_usage", "N/A"),
+                "cache_status": detailed_redis.get("cache_status", "operational"),
+                "worker_connectivity": detailed_redis.get("worker_connectivity", "unavailable"),
+            })
+        except Exception:
+            pass
         return Response(payload, status=status_code)
 
 

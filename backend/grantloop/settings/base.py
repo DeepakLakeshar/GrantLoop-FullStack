@@ -45,10 +45,14 @@ INSTALLED_APPS = [
     "apps.reports",
     "apps.health",
     "apps.common",
+    "apps.cache_utils",
+    "apps.performance",
 ]
 
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
+    "django.middleware.http.ConditionalGetMiddleware",
     "grantloop.middleware.RequestIDMiddleware",
     "grantloop.middleware.RequestTimingMiddleware",
     "django.middleware.security.SecurityMiddleware",

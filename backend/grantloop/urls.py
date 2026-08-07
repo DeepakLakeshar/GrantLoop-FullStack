@@ -7,6 +7,8 @@ urlpatterns = [
     path("", include("django_prometheus.urls")),
     # --- Public System Uptime, Versioning, and Release Changelog Feeds ---
     path("api/", include("apps.health.urls")),
+    path("api/performance/", include("apps.performance.urls")),
+    path("api/v1/performance/", include("apps.performance.urls")),
     # --- OpenAPI 3.0 Documentation & Interactive Portal Endpoints ---
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),

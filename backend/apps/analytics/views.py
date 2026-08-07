@@ -4,6 +4,8 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema
 from grantloop.openapi import analytics_dashboard_schema
+from apps.cache_utils.decorators import cached_endpoint
+from apps.cache_utils.keys import NAMESPACE_DASHBOARD, NAMESPACE_ANALYTICS, NAMESPACE_LEADERBOARDS, TTL_5_MINUTES, TTL_15_MINUTES, TTL_1_HOUR
 
 from . import services, serializers, permissions
 
@@ -16,6 +18,7 @@ class AdminDashboardView(APIView):
     permission_classes = [permissions.IsAdminForAnalytics]
 
     @analytics_dashboard_schema
+    @cached_endpoint(timeout=TTL_5_MINUTES, namespace=NAMESPACE_DASHBOARD, vary_on_user=True)
     def get(self, request):
         data = services.get_admin_dashboard(params=request.query_params.dict())
         serializer = serializers.AdminDashboardSerializer(data)
@@ -30,6 +33,7 @@ class NGODashboardView(APIView):
     permission_classes = [permissions.IsNGOForAnalytics]
 
     @analytics_dashboard_schema
+    @cached_endpoint(timeout=TTL_5_MINUTES, namespace=NAMESPACE_DASHBOARD, vary_on_user=True)
     def get(self, request):
         data = services.get_ngo_dashboard(user=request.user, params=request.query_params.dict())
         serializer = serializers.NGODashboardSerializer(data)
@@ -44,6 +48,7 @@ class DonorDashboardView(APIView):
     permission_classes = [permissions.IsDonorForAnalytics]
 
     @analytics_dashboard_schema
+    @cached_endpoint(timeout=TTL_5_MINUTES, namespace=NAMESPACE_DASHBOARD, vary_on_user=True)
     def get(self, request):
         data = services.get_donor_dashboard(user=request.user, params=request.query_params.dict())
         serializer = serializers.DonorDashboardSerializer(data)
@@ -59,6 +64,7 @@ class ChartAggregationView(APIView):
     serializer_class = serializers.ChartSerializer
 
     @extend_schema(tags=["Analytics"], summary="Retrieve Time-Series Monthly Chart Aggregation Arrays")
+    @cached_endpoint(timeout=TTL_15_MINUTES, namespace=NAMESPACE_ANALYTICS, vary_on_user=True)
     def get(self, request, chart_type=None):
         valid_charts = {"donations", "payouts", "campaigns", "users"}
         if not chart_type or chart_type.lower().strip("/") not in valid_charts:
@@ -84,6 +90,7 @@ class LeaderboardView(APIView):
     serializer_class = serializers.LeaderboardSerializer
 
     @extend_schema(tags=["Analytics"], summary="Retrieve Comparative Performance Entity Leaderboards")
+    @cached_endpoint(timeout=TTL_1_HOUR, namespace=NAMESPACE_LEADERBOARDS, vary_on_user=True)
     def get(self, request, leaderboard_type=None):
         valid_leaderboards = {
             "top-campaigns", "top-ngos", "top-donors",

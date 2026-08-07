@@ -98,11 +98,13 @@ monitoring_logger = logging.getLogger("grantloop.monitoring")
 
 class RequestTimingMiddleware(MiddlewareMixin):
     """
-    Records HTTP request duration, method, path, and response status code.
-    Logs warnings for slow requests (> 500ms).
+    Records HTTP request duration, method, path, response status code, and SQL query counts.
+    Integrates with PerformanceTracker to profile slow HTTP (> 500ms) and slow SQL (> 100ms).
     """
     def process_request(self, request):
         request.start_time = time.time()
+        from django.db import connection
+        request.start_query_count = len(connection.queries) if hasattr(connection, "queries") else 0
 
     def process_response(self, request, response):
         start_time = getattr(request, "start_time", None)
@@ -112,6 +114,22 @@ class RequestTimingMiddleware(MiddlewareMixin):
             method = request.method
             path = request.path
             status_code = response.status_code
+
+            from django.db import connection
+            start_q_cnt = getattr(request, "start_query_count", 0)
+            end_q_cnt = len(connection.queries) if hasattr(connection, "queries") else 0
+            queries_executed = max(0, end_q_cnt - start_q_cnt)
+
+            try:
+                from apps.performance.services import PerformanceTracker
+                PerformanceTracker.record_http_request(path, duration_ms, queries_during_req=queries_executed)
+                if hasattr(connection, "queries") and end_q_cnt > start_q_cnt:
+                    for q in connection.queries[start_q_cnt:end_q_cnt]:
+                        q_time_ms = float(q.get("time", 0.0)) * 1000.0
+                        if q_time_ms >= 100.0:
+                            PerformanceTracker.record_sql_query(q.get("sql", ""), q_time_ms)
+            except Exception:
+                pass
 
             # Log slow requests (> 500ms)
             if duration_ms > 500.0:
