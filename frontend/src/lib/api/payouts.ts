@@ -2,9 +2,20 @@ import { apiClient } from "@/lib/api/client";
 import type { DrfPaginatedResponse } from "@/lib/api/types";
 import type { FundRelease } from "@/types/entities";
 
+export interface PayoutFilters {
+  status?: "pending" | "approved" | "processing" | "completed" | "failed" | "rejected";
+  page?: number;
+  pageSize?: number;
+}
+
 export const payoutsApi = {
-  async list(): Promise<DrfPaginatedResponse<FundRelease>> {
-    const { data } = await apiClient.get<DrfPaginatedResponse<FundRelease>>("/payouts/");
+  async list(filters: PayoutFilters = {}): Promise<DrfPaginatedResponse<FundRelease>> {
+    const params = new URLSearchParams();
+    if (filters.status) params.append("status", filters.status);
+    if (filters.page) params.append("page", filters.page.toString());
+    if (filters.pageSize) params.append("page_size", filters.pageSize.toString());
+    
+    const { data } = await apiClient.get<DrfPaginatedResponse<FundRelease>>("/payouts/", { params });
     return data;
   },
 
