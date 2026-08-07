@@ -8,24 +8,38 @@ import { CauseListingPage } from "@/pages/public/CauseListingPage";
 import { CampaignDetailPage } from "@/pages/public/CampaignDetailPage";
 import { PricingPage } from "@/pages/public/PricingPage";
 import { NotFoundPage } from "@/pages/public/NotFoundPage";
-import { NgoDashboardPage } from "@/pages/dashboard/NgoDashboardPage";
-import { InstitutionDashboardPage } from "@/pages/dashboard/InstitutionDashboardPage";
-import { DonorDashboardPage } from "@/pages/dashboard/DonorDashboardPage";
+import { HelpCenterPage } from "@/pages/public/HelpCenterPage";
+
 import { ProfilePage } from "@/pages/dashboard/ProfilePage";
 import { SettingsPage } from "@/pages/dashboard/SettingsPage";
 import { PublicRoute, ProtectedRoute, RoleProtectedRoute } from "@/routes/RouteGuards";
 
+// Admin
 import { AdminDashboardLayout } from "@/pages/dashboard/Admin/AdminDashboardLayout";
 import { AdminDashboardOverview } from "@/pages/dashboard/Admin/AdminDashboardOverview";
 import { CampaignApprovalQueue } from "@/pages/dashboard/Admin/CampaignApprovalQueue";
 import { AdminPayoutManagement } from "@/pages/dashboard/Admin/AdminPayoutManagement";
 import { AdminReports } from "@/pages/dashboard/Admin/AdminReports";
+import { AdminAuditLogPage } from "@/pages/dashboard/Admin/AdminAuditLogPage";
 
-// Route map — mirrors the frozen Frontend Architecture Review, section 4,
-// plus the seven approved new screens. Auth pages are wrapped in
-// PublicRoute (redirects an already-logged-in user away); dashboard
-// pages are wrapped in RoleProtectedRoute (redirects a wrong-role user to
-// their own dashboard, and an anonymous user to /login).
+// Donor
+import { DonorDashboardLayout } from "@/pages/dashboard/Donor/DonorDashboardLayout";
+import { DonorDashboardOverview } from "@/pages/dashboard/Donor/DonorDashboardOverview";
+import { DonorDonationsPage } from "@/pages/dashboard/Donor/DonorDonationsPage";
+import { DonorImpactPage } from "@/pages/dashboard/Donor/DonorImpactPage";
+import { DonorVerificationPage } from "@/pages/dashboard/Donor/DonorVerificationPage";
+
+// NGO
+import { NgoDashboardLayout } from "@/pages/dashboard/Ngo/NgoDashboardLayout";
+import { NgoDashboardOverview } from "@/pages/dashboard/Ngo/NgoDashboardOverview";
+import { SubmitCasePage } from "@/pages/dashboard/Ngo/SubmitCasePage";
+
+// Institution
+import { InstitutionDashboardLayout } from "@/pages/dashboard/Institution/InstitutionDashboardLayout";
+import { InstitutionDashboardOverview } from "@/pages/dashboard/Institution/InstitutionDashboardOverview";
+import { InstitutionVerifyPage } from "@/pages/dashboard/Institution/InstitutionVerifyPage";
+import { InstitutionFundReleasePage } from "@/pages/dashboard/Institution/InstitutionFundReleasePage";
+
 export default function App() {
   return (
     <Routes>
@@ -48,21 +62,34 @@ export default function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/settings/notifications" element={<Navigate to="/settings" replace />} />
+        <Route path="/help" element={<HelpCenterPage />} />
       </Route>
 
       {/* NGO only */}
       <Route element={<RoleProtectedRoute allowedRoles={["ngo"]} />}>
-        <Route path="/dashboard/ngo" element={<NgoDashboardPage />} />
+        <Route element={<NgoDashboardLayout />}>
+          <Route path="/dashboard/ngo" element={<NgoDashboardOverview />} />
+          <Route path="/submit-case" element={<SubmitCasePage />} />
+        </Route>
       </Route>
 
       {/* Institution only */}
       <Route element={<RoleProtectedRoute allowedRoles={["institution"]} />}>
-        <Route path="/dashboard/institution" element={<InstitutionDashboardPage />} />
+        <Route element={<InstitutionDashboardLayout />}>
+          <Route path="/dashboard/institution" element={<InstitutionDashboardOverview />} />
+          <Route path="/dashboard/institution/fund-releases" element={<InstitutionFundReleasePage />} />
+          <Route path="/verify" element={<InstitutionVerifyPage />} />
+        </Route>
       </Route>
 
       {/* Donor only */}
       <Route element={<RoleProtectedRoute allowedRoles={["donor"]} />}>
-        <Route path="/dashboard/donor" element={<DonorDashboardPage />} />
+        <Route path="/dashboard/donor" element={<DonorDashboardLayout />}>
+          <Route index element={<DonorDashboardOverview />} />
+          <Route path="donations" element={<DonorDonationsPage />} />
+          <Route path="impact" element={<DonorImpactPage />} />
+          <Route path="verification" element={<DonorVerificationPage />} />
+        </Route>
       </Route>
 
       {/* Admin only */}
@@ -72,6 +99,7 @@ export default function App() {
           <Route path="campaigns" element={<CampaignApprovalQueue />} />
           <Route path="payouts" element={<AdminPayoutManagement />} />
           <Route path="reports" element={<AdminReports />} />
+          <Route path="audit" element={<AdminAuditLogPage />} />
         </Route>
       </Route>
 
