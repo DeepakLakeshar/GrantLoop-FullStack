@@ -3,6 +3,7 @@ import { Bell } from "lucide-react";
 import { useState } from "react";
 import { NotificationPanel } from "@/components/feature/NotificationPanel";
 import { useAuth } from "@/context/AuthContext";
+import { useUnreadNotificationsCount } from "@/hooks/useNotifications";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   isActive
@@ -12,7 +13,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 export function TopNavBar() {
   const { status, user } = useAuth();
   const isAuthenticated = status === "authenticated" && !!user;
-  const unreadCount = 0; // wired to GET /notifications/unread-count/ once that endpoint exists
+  const { data: unreadCount = 0 } = useUnreadNotificationsCount(isAuthenticated);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   return (

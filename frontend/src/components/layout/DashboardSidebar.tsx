@@ -9,7 +9,6 @@ import {
   LogOut,
   FileCheck2,
   Wallet,
-  Users,
   ScrollText,
 } from "lucide-react";
 import type { UserRole } from "@/types/entities";
