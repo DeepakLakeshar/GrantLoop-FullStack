@@ -15,7 +15,7 @@ export interface CampaignFilters {
   search?: string;
   categorySlug?: string;
   countryCode?: string;
-  status?: "live" | "completed";
+  status?: "live" | "completed" | "pending_verification" | "draft" | "rejected";
   minGoal?: number;
   maxGoal?: number;
   sort?: "newest" | "most_funded" | "ending_soon" | "goal_high_low";
