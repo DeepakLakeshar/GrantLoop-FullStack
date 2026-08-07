@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { authApi, type LoginPayload, type RegisterPayload } from "@/lib/auth/authApi";
 import { tokenStorage } from "@/lib/auth/tokenStorage";
 import { sessionExpiredBus } from "@/lib/auth/sessionExpiredBus";
@@ -19,12 +20,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [status, setStatus] = useState<SessionStatus>("restoring");
+  const queryClient = useQueryClient();
 
   const clearSession = useCallback(() => {
     tokenStorage.clear();
+    queryClient.clear();
     setUser(null);
     setStatus("unauthenticated");
-  }, []);
+  }, [queryClient]);
 
   // Registered once so the Axios interceptor can force a logout when a
   // refresh attempt fails — this is what turns a truly expired session

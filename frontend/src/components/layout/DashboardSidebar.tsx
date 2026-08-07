@@ -12,6 +12,8 @@ import {
   ScrollText,
 } from "lucide-react";
 import type { UserRole } from "@/types/entities";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarLink {
   to: string;
@@ -57,6 +59,13 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ role, title, subtitle }: DashboardSidebarProps) {
   const links = ROLE_LINKS[role];
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
 
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 bg-surface-container-low border-r border-outline-variant flex flex-col p-6 space-y-4 pt-20">
@@ -98,7 +107,10 @@ export function DashboardSidebar({ role, title, subtitle }: DashboardSidebarProp
           <HelpCircle className="w-5 h-5" />
           <span className="font-label-caps">Help Center</span>
         </NavLink>
-        <button className="flex items-center gap-3 p-2 text-on-surface-variant hover:text-error transition-colors w-full text-left">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 p-2 text-on-surface-variant hover:text-error transition-colors w-full text-left"
+        >
           <LogOut className="w-5 h-5" />
           <span className="font-label-caps">Log Out</span>
         </button>

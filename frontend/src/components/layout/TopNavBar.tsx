@@ -1,5 +1,5 @@
-import { Link, NavLink } from "react-router-dom";
-import { Bell } from "lucide-react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Bell, LogOut } from "lucide-react";
 import { useState } from "react";
 import { NotificationPanel } from "@/components/feature/NotificationPanel";
 import { useAuth } from "@/context/AuthContext";
@@ -11,10 +11,16 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     : "text-on-surface-variant font-medium hover:text-primary transition-colors";
 
 export function TopNavBar() {
-  const { status, user } = useAuth();
+  const { status, user, logout } = useAuth();
+  const navigate = useNavigate();
   const isAuthenticated = status === "authenticated" && !!user;
   const { data: unreadCount = 0 } = useUnreadNotificationsCount(isAuthenticated);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
 
   return (
     <header className="sticky top-0 z-50 flex justify-between items-center px-margin-desktop w-full h-16 max-w-container-max mx-auto bg-surface-container-lowest border-b border-outline-variant">
@@ -48,12 +54,26 @@ export function TopNavBar() {
                 <NotificationPanel onClose={() => setNotificationsOpen(false)} />
               )}
             </div>
-            <Link
-              to="/profile"
-              className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-primary font-bold text-label-caps"
-            >
-              {user.username.slice(0, 1).toUpperCase()}
-            </Link>
+            <div className="flex items-center gap-3 border-l border-outline-variant pl-4 ml-2">
+              <span className="text-body-md font-medium text-on-surface hidden sm:block">
+                {user.email || user.username}
+              </span>
+              <Link
+                to="/profile"
+                className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-primary font-bold text-label-caps"
+                title="Profile"
+              >
+                {user.username.slice(0, 1).toUpperCase()}
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="text-on-surface-variant hover:text-error transition-colors p-1 rounded-full hover:bg-surface-container-high"
+                title="Log Out"
+                aria-label="Log Out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </>
         ) : (
           <>
