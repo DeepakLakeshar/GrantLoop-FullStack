@@ -1,8 +1,8 @@
-import { UnsupportedFeaturePage } from "@/components/shared/UnsupportedFeaturePage";
+import { FeatureUnavailablePage } from "@/components/shared/FeatureUnavailablePage";
 
 export function DonorVerificationPage() {
   return (
-    <UnsupportedFeaturePage 
+    <FeatureUnavailablePage 
       title="Verification Hub"
       featureName="Donor verification"
     />

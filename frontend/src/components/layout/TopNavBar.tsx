@@ -1,4 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
+import { ROUTES } from "@/config/routes";
 import { Bell, LogOut } from "lucide-react";
 import { useState } from "react";
 import { NotificationPanel } from "@/components/feature/NotificationPanel";
@@ -16,7 +17,15 @@ export function TopNavBar() {
   const isAuthenticated = status === "authenticated" && !!user;
   const { data: unreadCount = 0 } = useUnreadNotificationsCount(isAuthenticated);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-
+  const dashboardPath = isAuthenticated ? (
+    {
+      donor: ROUTES.DASHBOARD.DONOR,
+      ngo: ROUTES.DASHBOARD.NGO,
+      institution: ROUTES.DASHBOARD.INSTITUTION,
+      admin: ROUTES.DASHBOARD.ADMIN,
+      execution_partner: ROUTES.DASHBOARD.EXECUTION,
+    }[user.role] || ROUTES.PUBLIC.ROOT
+  ) : ROUTES.PUBLIC.ROOT;
   const handleLogout = async () => {
     await logout();
     navigate("/");
@@ -25,10 +34,11 @@ export function TopNavBar() {
   return (
     <header className="sticky top-0 z-50 flex justify-between items-center px-margin-desktop w-full h-16 max-w-container-max mx-auto bg-surface-container-lowest border-b border-outline-variant">
       <div className="flex items-center gap-8">
-        <Link to="/" className="text-headline-md font-headline-md font-bold text-primary">
+        <Link to={isAuthenticated ? dashboardPath : "/"} className="text-headline-md font-headline-md font-bold text-primary">
           GrantLoop
         </Link>
         <nav className="hidden md:flex gap-6 items-center">
+          <NavLink to={dashboardPath} className={navLinkClass}>Dashboard</NavLink>
           <NavLink to="/causes" className={navLinkClass}>Causes</NavLink>
           <NavLink to="/pricing" className={navLinkClass}>Transparency</NavLink>
           <NavLink to="/how-it-works" className={navLinkClass}>How it Works</NavLink>

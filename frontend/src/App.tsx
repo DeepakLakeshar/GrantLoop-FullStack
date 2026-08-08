@@ -36,6 +36,8 @@ import { SubmitCasePage } from "@/pages/dashboard/Ngo/SubmitCasePage";
 
 // Institution
 import { InstitutionDashboardLayout } from "@/pages/dashboard/Institution/InstitutionDashboardLayout";
+import { ExecutionDashboardLayout } from "@/pages/dashboard/Execution/ExecutionDashboardLayout";
+import { AssignedMilestonesPage } from "@/pages/dashboard/Execution/AssignedMilestonesPage";
 import { InstitutionDashboardOverview } from "@/pages/dashboard/Institution/InstitutionDashboardOverview";
 import { InstitutionVerifyPage } from "@/pages/dashboard/Institution/InstitutionVerifyPage";
 import { InstitutionFundReleasePage } from "@/pages/dashboard/Institution/InstitutionFundReleasePage";
@@ -103,6 +105,12 @@ export default function App() {
         </Route>
       </Route>
 
+      {/* Execution Partner only */}
+      <Route element={<RoleProtectedRoute allowedRoles={["execution_partner"]} />}>
+        <Route element={<ExecutionDashboardLayout />}>
+          <Route path="/dashboard/execution" element={<AssignedMilestonesPage />} />
+        </Route>
+      </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

@@ -1,8 +1,8 @@
-import { UnsupportedFeaturePage } from "@/components/shared/UnsupportedFeaturePage";
+import { FeatureUnavailablePage } from "@/components/shared/FeatureUnavailablePage";
 
 export function DonorImpactPage() {
   return (
-    <UnsupportedFeaturePage 
+    <FeatureUnavailablePage 
       title="Impact Reports"
       featureName="Impact reporting"
     />

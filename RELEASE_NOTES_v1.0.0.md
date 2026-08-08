@@ -1,4 +1,120 @@
-# GrantLoop Backend v1.0.0 Release Notes
+Proceed with the Execution Partner dashboard implementation now.
+
+Your investigation confirms:
+
+execution_partner is a valid role.
+ROLE_HOME points to /dashboard/execution.
+Login successfully redirects to /dashboard/execution.
+App.tsx has no execution route.
+No Execution dashboard component currently exists.
+RoleProtectedRoute already exists and should be reused.
+src/config/routes.ts is the single centralized route configuration.
+
+Implement the missing functionality using the existing project architecture.
+
+Required changes
+
+1. Create
+
+src/pages/dashboard/Execution/ExecutionDashboardLayout.tsx
+src/pages/dashboard/Execution/AssignedMilestonesPage.tsx
+
+Follow the same architectural pattern as the existing Donor/NGO/Institution/Admin dashboard layouts. Reuse the existing TopNavBar and DashboardSidebar where appropriate. Do not duplicate those components.
+
+2. Add to src/config/routes.ts
+
+Add:
+
+ROUTES.DASHBOARD.EXECUTION
+
+with:
+
+"/dashboard/execution"
+
+Keep src/config/routes.ts as the single route constant source. Do not create another routes file.
+
+3. Update src/App.tsx
+
+Register:
+
+/dashboard/execution
+
+using the existing RoleProtectedRoute pattern and restrict it to:
+
+execution_partner
+
+Use the existing nested dashboard architecture where appropriate:
+
+RoleProtectedRoute
+    ↓
+ExecutionDashboardLayout
+    ↓
+AssignedMilestonesPage
+
+4. Update TopNavBar
+
+Make sure execution_partner maps to:
+
+ROUTES.DASHBOARD.EXECUTION
+
+Therefore:
+
+GrantLoop logo → /dashboard/execution
+Dashboard → /dashboard/execution
+
+5. Keep the existing sidebar item
+
+The existing:
+
+Assigned Milestones → /dashboard/execution
+
+should continue to work, but replace the hard-coded path with ROUTES.DASHBOARD.EXECUTION if it currently uses a string.
+
+6. Do not invent backend functionality
+
+AssignedMilestonesPage should only display functionality supported by the current frontend/backend. If there is no milestone API yet, create a clearly marked empty/placeholder state rather than fake data.
+
+7. Test the actual application
+
+Run:
+
+npx tsc -b
+npm run build
+
+Then restart Vite:
+
+npm run dev
+
+Clear Vite cache if necessary.
+
+8. Most important: manually verify in the browser
+
+Login as:
+
+executioncheck@gmail.com
+
+Confirm the actual browser displays:
+
+Assigned Milestones
+
+at:
+
+http://localhost:5174/dashboard/execution
+
+and NOT the 404 page.
+
+Then test:
+
+GrantLoop logo → execution dashboard
+Dashboard → execution dashboard
+Assigned Milestones → execution dashboard
+Logout → /
+Directly opening /dashboard/execution while logged out → /login
+Login as donor → attempting /dashboard/execution must NOT grant access
+
+Do not report this as fixed based only on TypeScript/build success. The browser must actually render the Execution Partner dashboard.
+
+After implementation, give me the exact files changed and wait for my manual browser verification before making further routing changes.# GrantLoop Backend v1.0.0 Release Notes
 
 Welcome to the official `v1.0.0` release of the GrantLoop Backend SaaS platform! This release marks the transition from active architectural development to production readiness.
 

@@ -104,31 +104,31 @@ class Migration(migrations.Migration):
                 migrations.RunSQL(
                     sql=(
                         "ALTER TABLE campaigns_beneficiary "
-                        "ADD COLUMN verified_by_id CHAR(32) NULL "
+                        "ADD COLUMN verified_by_id UUID NULL "
                         "REFERENCES accounts_user(id) DEFERRABLE INITIALLY DEFERRED;"
                     ),
                     reverse_sql="ALTER TABLE campaigns_beneficiary DROP COLUMN verified_by_id;",
                 ),
                 migrations.RunSQL(
-                    sql="ALTER TABLE campaigns_beneficiary ADD COLUMN verified_at DATETIME NULL;",
+                    sql="ALTER TABLE campaigns_beneficiary ADD COLUMN verified_at TIMESTAMP NULL;",
                     reverse_sql="ALTER TABLE campaigns_beneficiary DROP COLUMN verified_at;",
                 ),
                 migrations.RunSQL(
                     sql=(
                         "ALTER TABLE campaigns_beneficiary "
-                        "ADD COLUMN rejected_by_id CHAR(32) NULL "
+                        "ADD COLUMN rejected_by_id UUID NULL "
                         "REFERENCES accounts_user(id) DEFERRABLE INITIALLY DEFERRED;"
                     ),
                     reverse_sql="ALTER TABLE campaigns_beneficiary DROP COLUMN rejected_by_id;",
                 ),
                 migrations.RunSQL(
-                    sql="ALTER TABLE campaigns_beneficiary ADD COLUMN rejected_at DATETIME NULL;",
+                    sql="ALTER TABLE campaigns_beneficiary ADD COLUMN rejected_at TIMESTAMP NULL;",
                     reverse_sql="ALTER TABLE campaigns_beneficiary DROP COLUMN rejected_at;",
                 ),
 
                 # 6. Soft-delete flag
                 migrations.RunSQL(
-                    sql="ALTER TABLE campaigns_beneficiary ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT 0;",
+                    sql="ALTER TABLE campaigns_beneficiary ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT FALSE;",
                     reverse_sql="ALTER TABLE campaigns_beneficiary DROP COLUMN is_deleted;",
                 ),
 
@@ -136,14 +136,14 @@ class Migration(migrations.Migration):
                 migrations.RunSQL(
                     sql=(
                         "ALTER TABLE campaigns_beneficiary "
-                        "ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+                        "ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;"
                     ),
                     reverse_sql="ALTER TABLE campaigns_beneficiary DROP COLUMN created_at;",
                 ),
                 migrations.RunSQL(
                     sql=(
                         "ALTER TABLE campaigns_beneficiary "
-                        "ADD COLUMN updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+                        "ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;"
                     ),
                     reverse_sql="ALTER TABLE campaigns_beneficiary DROP COLUMN updated_at;",
                 ),

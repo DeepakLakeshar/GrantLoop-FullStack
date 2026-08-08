@@ -1,12 +1,12 @@
-interface UnsupportedFeaturePageProps {
+interface FeatureUnavailablePageProps {
   title: string;
   featureName: string;
   reason?: string;
 }
 
-export function UnsupportedFeaturePage({ title, featureName, reason }: UnsupportedFeaturePageProps) {
+export function FeatureUnavailablePage({ title, featureName, reason }: FeatureUnavailablePageProps) {
   const defaultReason = `because the backend does not currently expose ${featureName.toLowerCase()} endpoints.`;
-  const message = `${featureName} is not available in GrantLoop v1.0.0 ${reason || defaultReason} No action is required from the user.`;
+  const message = `${featureName} is not available in GrantLoop v1.0.0 ${reason || defaultReason} It will automatically become available when backend support is added.`;
 
   return (
     <div className="space-y-8">

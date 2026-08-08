@@ -1,0 +1,30 @@
+// Centralized route configuration
+export const ROUTES = {
+  PUBLIC: {
+    ROOT: "/",
+    CAUSES: "/causes",
+    CAUSE_DETAIL: "/causes/:id",
+    PRICING: "/pricing",
+    HELP: "/help",
+    LOGIN: "/login",
+    REGISTER: "/register",
+    FORGOT_PASSWORD: "/forgot-password",
+    RESET_PASSWORD: "/reset-password",
+  },
+  DASHBOARD: {
+    ADMIN: "/dashboard/admin",
+    ADMIN_CAMPAIGNS: "/dashboard/admin/campaigns",
+    ADMIN_PAYOUTS: "/dashboard/admin/payouts",
+    ADMIN_REPORTS: "/dashboard/admin/reports",
+    ADMIN_AUDIT: "/dashboard/admin/audit",
+    DONOR: "/dashboard/donor",
+    DONOR_DONATIONS: "/dashboard/donor/donations",
+    DONOR_IMPACT: "/dashboard/donor/impact",
+    DONOR_VERIFICATION: "/dashboard/donor/verification",
+    NGO: "/dashboard/ngo",
+    INSTITUTION: "/dashboard/institution",
+    INSTITUTION_FUND_RELEASES: "/dashboard/institution/fund-releases",
+    VERIFY: "/verify",
+    EXECUTION: "/dashboard/execution",
+  },
+} as const;

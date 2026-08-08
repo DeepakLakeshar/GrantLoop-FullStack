@@ -1,8 +1,8 @@
-import { UnsupportedFeaturePage } from "@/components/shared/UnsupportedFeaturePage";
+import { FeatureUnavailablePage } from "@/components/shared/FeatureUnavailablePage";
 
 export function AdminAuditLogPage() {
   return (
-    <UnsupportedFeaturePage 
+    <FeatureUnavailablePage 
       title="Audit Log"
       featureName="Detailed audit logging"
       reason="because comprehensive audit logging is scheduled for a future milestone."
