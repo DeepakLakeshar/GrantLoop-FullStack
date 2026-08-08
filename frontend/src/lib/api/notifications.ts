@@ -4,8 +4,19 @@ import type { Notification } from "@/types/entities";
 
 export const notificationsApi = {
   async list(): Promise<DrfPaginatedResponse<Notification>> {
-    const { data } = await apiClient.get<DrfPaginatedResponse<Notification>>("/notifications/");
-    return data;
+    // The backend may return a plain array or a DRF‑paginated response.
+    const { data } = await apiClient.get<any>("/notifications/");
+    if (Array.isArray(data)) {
+      // Convert plain array into a DRF‑like paginated object.
+      return {
+        results: data,
+        count: data.length,
+        next: null,
+        previous: null,
+      } as unknown as DrfPaginatedResponse<Notification>;
+    }
+    // Assume DRF paginated response already.
+    return data as DrfPaginatedResponse<Notification>;
   },
 
   async getUnreadCount(): Promise<number> {
